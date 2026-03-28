@@ -1,0 +1,73 @@
+generator client  { provider = "prisma-client-js" }
+datasource db     { provider = "postgresql"; url = env("DATABASE_URL") }
+
+enum Role        { VIEWER CONTRIBUTOR CURATOR ADMIN }
+enum PatternType { KENTE BOGOLAN ADINKRA NDEBELE KUBA NDOP WAX }
+enum Region      { WEST_AFRICA EAST_AFRICA CENTRAL_AFRICA NORTH_AFRICA SOUTH_AFRICA DIASPORA }
+enum UsageType   { CEREMONIAL DAILY ROYAL SPIRITUAL UNIVERSAL }
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  role          Role      @default(VIEWER)
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  patterns      Pattern[]
+  accounts      Account[]
+  sessions      Session[]
+  @@map("users")
+}
+
+model Pattern {
+  id               String      @id @default(cuid())
+  slug             String      @unique
+  nameFr           String
+  nameEn           String
+  descFr           String      @db.Text
+  descEn           String      @db.Text
+  patternType      PatternType
+  region           Region
+  country          String      @db.Char(2)
+  colorPrimary     String
+  colorSecondary   String
+  colorAccent      String?
+  symbolMeaning    String      @db.Text
+  symbolKeywords   String[]
+  symbolUsage      UsageType
+  isPublished      Boolean     @default(false)
+  isFeatured       Boolean     @default(false)
+  viewCount        Int         @default(0)
+  svgUrl           String?
+  previewUrl       String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  createdById      String
+  createdBy        User        @relation(fields: [createdById], references: [id])
+  @@index([slug]) @@index([patternType]) @@index([region]) @@index([isPublished])
+  @@map("patterns")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  access_token      String? @db.Text
+  refresh_token     String? @db.Text
+  expires_at        Int?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("sessions")
+}
