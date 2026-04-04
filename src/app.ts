@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 
@@ -14,7 +15,14 @@ import { errorFilter, notFoundHandler } from '@/shared/filters/error.filter';
 import { logger } from '@/shared/utils/logger';
 import { swaggerSpec } from '@/shared/docs/swagger.config';
 
+import authRoutes from '@/modules/auth/auth.routes';
 import cultureRoutes from '@/api/routes/culture.routes';
+import userRoutes from '@/modules/user/user.routes';
+import artisanRoutes from '@/modules/artisan/artisan.routes';
+import paletteRoutes from '@/modules/palette/palette.routes';
+import templateRoutes from '@/modules/template/template.routes';
+import commentRoutes from '@/modules/comment/comment.routes';
+import activityRoutes from '@/modules/activity/activity.routes';
 
 const app = express();
 const API_VERSION = process.env.API_VERSION ?? 'v1';
@@ -30,8 +38,10 @@ app.use((req, res, next) => {
 app.use(corsMiddleware);
 app.use(globalRateLimiter);
 app.use(compression());
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(cookieParser());
 app.use(morgan('combined', { stream: { write: msg => logger.http(msg.trim()) } }));
 
 // ── Swagger UI ────────────────────────────────────────────────────────────────
@@ -41,7 +51,7 @@ const swaggerUiOptions: swaggerUi.SwaggerUiOptions = {
     body { font-family: 'Segoe UI', sans-serif; }
     .topbar { background-color: #1D1D1B !important; padding: 8px 20px; }
     .topbar .topbar-wrapper .link { color: #C0573E !important; font-weight: 700; font-size: 1.1rem; }
-    .topbar .topbar-wrapper .link::before { content: '🌍 '; }
+    .topbar .topbar-wrapper .link::before { content: ''; }
     .swagger-ui .info .title { color: #C0573E; }
     .swagger-ui .info .description p { color: #1D1D1B; }
     .swagger-ui .opblock.opblock-get    .opblock-summary { border-color: #1D1D1B; }
@@ -100,7 +110,14 @@ app.get(`/api/${API_VERSION}/health`, (_req, res) => {
   });
 });
 
+app.use(`/api/${API_VERSION}/auth`, authRoutes);
 app.use(`/api/${API_VERSION}/patterns`, cultureRoutes);
+app.use(`/api/${API_VERSION}/users`, userRoutes);
+app.use(`/api/${API_VERSION}/artisans`, artisanRoutes);
+app.use(`/api/${API_VERSION}/palettes`, paletteRoutes);
+app.use(`/api/${API_VERSION}/templates`, templateRoutes);
+app.use(`/api/${API_VERSION}/comments`, commentRoutes);
+app.use(`/api/${API_VERSION}/activities`, activityRoutes);
 
 // ── Handlers 404 + Error ──────────────────────────────────────────────────────
 app.use(notFoundHandler);

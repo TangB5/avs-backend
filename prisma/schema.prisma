@@ -1,10 +1,45 @@
-generator client  { provider = "prisma-client-js" }
-datasource db     { provider = "postgresql"; url = env("DATABASE_URL") }
+generator client {
+  provider = "prisma-client-js"
+}
 
-enum Role        { VIEWER CONTRIBUTOR CURATOR ADMIN }
-enum PatternType { KENTE BOGOLAN ADINKRA NDEBELE KUBA NDOP WAX }
-enum Region      { WEST_AFRICA EAST_AFRICA CENTRAL_AFRICA NORTH_AFRICA SOUTH_AFRICA DIASPORA }
-enum UsageType   { CEREMONIAL DAILY ROYAL SPIRITUAL UNIVERSAL }
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  VIEWER
+  CONTRIBUTOR
+  CURATOR
+  ADMIN
+}
+
+enum PatternType {
+  KENTE
+  BOGOLAN
+  ADINKRA
+  NDEBELE
+  KUBA
+  NDOP
+  WAX
+}
+
+enum Region {
+  WEST_AFRICA
+  EAST_AFRICA
+  CENTRAL_AFRICA
+  NORTH_AFRICA
+  SOUTH_AFRICA
+  DIASPORA
+}
+
+enum UsageType {
+  CEREMONIAL
+  DAILY
+  ROYAL
+  SPIRITUAL
+  UNIVERSAL
+}
 
 model User {
   id            String    @id @default(cuid())
@@ -13,11 +48,22 @@ model User {
   passwordHash  String?
   role          Role      @default(VIEWER)
   emailVerified DateTime?
+  bio           String?   @db.Text
+  location      String?
+  website       String?
+  github        String?
+  twitter       String?
+  specialty     String?
+  avatar        String?
+  verified      Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   patterns      Pattern[]
   accounts      Account[]
   sessions      Session[]
+  artisan       Artisan?
+  comments      Comment[]
+  activities    Activity[]
   @@map("users")
 }
 
@@ -40,13 +86,18 @@ model Pattern {
   isPublished      Boolean     @default(false)
   isFeatured       Boolean     @default(false)
   viewCount        Int         @default(0)
+  downloadCount    Int         @default(0)
   svgUrl           String?
   previewUrl       String?
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
   createdById      String
   createdBy        User        @relation(fields: [createdById], references: [id])
-  @@index([slug]) @@index([patternType]) @@index([region]) @@index([isPublished])
+  comments         Comment[]
+  @@index([slug])
+  @@index([patternType])
+  @@index([region])
+  @@index([isPublished])
   @@map("patterns")
 }
 
@@ -70,4 +121,148 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@map("sessions")
+}
+
+enum ArtisanSpecialty {
+  KENTE
+  BOGOLAN
+  ADINKRA
+  NDEBELE
+  KUBA
+  NDOP
+  WAX
+}
+
+model Artisan {
+  id            String               @id @default(cuid())
+  userId        String               @unique
+  name          String
+  craft         String
+  origin        String
+  country       String
+  bio           String               @db.Text
+  specialties   ArtisanSpecialty[]
+  patternCount  Int                  @default(0)
+  rating        Float                @default(0)
+  verified      Boolean              @default(false)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments      Comment[]
+  @@map("artisans")
+}
+
+model Palette {
+  id           String        @id @default(cuid())
+  name         String
+  origin       String
+  description  String        @db.Text
+  patternCSS   String?
+  isPublished  Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  tokens       ColorToken[]
+  @@map("palettes")
+}
+
+model ColorToken {
+  id        String   @id @default(cuid())
+  name      String
+  hex       String
+  meaning   String   @db.Text
+  origin    String
+  css       String
+  paletteId String
+  palette   Palette  @relation(fields: [paletteId], references: [id], onDelete: Cascade)
+  @@map("color_tokens")
+}
+
+enum TemplateCategory {
+  HERO
+  GALLERY
+  CARD
+  FORM
+  NAVIGATION
+  FOOTER
+  LAYOUT
+}
+
+enum TemplateFramework {
+  REACT
+  NEXT_JS
+  VUE
+  SVELTE
+  ANGULAR
+}
+
+enum TemplateComplexity {
+  SIMPLE
+  INTERMEDIATE
+  ADVANCED
+}
+
+model Template {
+  id          String               @id @default(cuid())
+  name        String
+  category    TemplateCategory
+  framework   TemplateFramework
+  complexity  TemplateComplexity
+  description String               @db.Text
+  code        String               @db.Text
+  isPublished Boolean              @default(false)
+  isFeatured  Boolean              @default(false)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  @@index([category])
+  @@index([framework])
+  @@map("templates")
+}
+
+enum CommentType {
+  PATTERN
+  ARTISAN
+}
+
+model Comment {
+  id        String      @id @default(cuid())
+  content   String      @db.Text
+  rating    Float?
+  type      CommentType
+  patternId String?
+  artisanId String?
+  pattern   Pattern?    @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  artisan   Artisan?    @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified  Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  @@index([patternId])
+  @@index([artisanId])
+  @@index([userId])
+  @@map("comments")
+}
+
+enum ActivityAction {
+  CREATED
+  UPDATED
+  PUBLISHED
+  COMMENTED
+  REVIEWED
+  DOWNLOADED
+  FAVORITED
+}
+
+model Activity {
+  id         String        @id @default(cuid())
+  userId     String
+  action     ActivityAction
+  targetId   String
+  targetType String
+  metadata   Json?
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime      @default(now())
+  @@index([userId])
+  @@index([createdAt])
+  @@map("activities")
 }

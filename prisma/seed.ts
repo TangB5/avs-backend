@@ -12,7 +12,7 @@ async function main() {
       slug: 'ndop-bamoum', nameFr: 'Ndop Royal Bamoum', nameEn: 'Bamoum Royal Ndop',
       descFr: 'Tissu sacré tissé pour les cérémonies royales du Sultanat Bamoum.',
       descEn: 'Sacred cloth woven for royal ceremonies of the Bamoum Sultanate.',
-      patternType: 'NDop', region: 'CENTRAL_AFRICA', country: 'CM',
+      patternType: 'NDOP', region: 'CENTRAL_AFRICA', country: 'CM',
       colorPrimary: '#0D2340', colorSecondary: '#C8A96E', colorAccent: '#F5EBE0',
       symbolMeaning: 'Royauté, spiritualité, transmission inter-générationnelle.',
       symbolKeywords: ['royauté', 'cameroun', 'bamoum', 'foumban'], symbolUsage: 'CEREMONIAL',

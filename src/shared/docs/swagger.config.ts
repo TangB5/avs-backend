@@ -218,6 +218,10 @@ Authorization: Bearer <votre_token>
   apis: [
     './src/api/routes/*.ts',
     './src/api/controllers/*.ts',
+    './src/modules/*/routes.ts',
+    './src/modules/*/*.routes.ts',
+    './src/modules/*/controllers/*.ts',
+    './src/modules/*/*controller.ts',
   ],
 };
 
