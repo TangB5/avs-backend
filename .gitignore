@@ -1,0 +1,13 @@
+node_modules/ dist/ build/ coverage/
+.env .env.local .env.production
+*.pem *.key *.log
+.cache/ prisma/migrations/dev/
+.DS_Store Thumbs.db
+node_modules/
+.env
+.env.local
+.env.production
+dist/
+build/
+coverage/
+.cache/
