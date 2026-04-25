@@ -42,7 +42,7 @@ Authorization: Bearer <votre_token>
       { name: 'Patterns', description: 'Motifs culturels africains (CRUD)' },
       { name: 'Auth',     description: 'Authentification & gestion des tokens' },
     ],
-    components: {
+    components: { 
       securitySchemes: {
         bearerAuth: {
           type:         'http',

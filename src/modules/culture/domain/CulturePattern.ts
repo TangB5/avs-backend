@@ -67,6 +67,7 @@ export class CulturePattern {
   get symbolism():   PatternSymbolism { return { ...this.props.symbolism }; }
   get region():      Region           { return this.props.region; }
   get patternType(): PatternType      { return this.props.patternType; }
+  get createdById(): string          { return this.props.createdById; }
 
   // Comportements domaine
   publish(): CulturePattern {
@@ -79,6 +80,14 @@ export class CulturePattern {
 
   incrementView(): CulturePattern {
     return new CulturePattern({ ...this.props, viewCount: this.props.viewCount + 1 });
+  }
+
+  update(updates: Partial<CulturePatternProps>): CulturePattern {
+    return new CulturePattern({ 
+      ...this.props, 
+      ...updates, 
+      updatedAt: new Date() 
+    });
   }
 
   toObject(): CulturePatternProps { return { ...this.props }; }

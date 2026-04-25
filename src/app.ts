@@ -15,12 +15,19 @@ import { errorFilter, notFoundHandler } from '@/shared/filters/error.filter';
 import { logger } from '@/shared/utils/logger';
 import { swaggerSpec } from '@/shared/docs/swagger.config';
 
+// ── Authentication & User Management ───────────────────────────────────────
 import authRoutes from '@/modules/auth/auth.routes';
-import cultureRoutes from '@/api/routes/culture.routes';
 import userRoutes from '@/modules/user/user.routes';
+
+// ── Cultural Content ───────────────────────────────────────────────────────
+import cultureRoutes from '@/api/routes/culture.routes';
 import artisanRoutes from '@/modules/artisan/artisan.routes';
+
+// ── Creative Tools & Resources ─────────────────────────────────────────────
 import paletteRoutes from '@/modules/palette/palette.routes';
 import templateRoutes from '@/modules/template/template.routes';
+
+// ── Community & Interaction ───────────────────────────────────────────────
 import commentRoutes from '@/modules/comment/comment.routes';
 import activityRoutes from '@/modules/activity/activity.routes';
 
@@ -110,12 +117,20 @@ app.get(`/api/${API_VERSION}/health`, (_req, res) => {
   });
 });
 
+// ── Routes Registration ──────────────────────────────────────────────────────
+// Authentication & User Management
 app.use(`/api/${API_VERSION}/auth`, authRoutes);
-app.use(`/api/${API_VERSION}/patterns`, cultureRoutes);
 app.use(`/api/${API_VERSION}/users`, userRoutes);
+
+// Cultural Content
+app.use(`/api/${API_VERSION}/patterns`, cultureRoutes);
 app.use(`/api/${API_VERSION}/artisans`, artisanRoutes);
+
+// Creative Tools & Resources
 app.use(`/api/${API_VERSION}/palettes`, paletteRoutes);
 app.use(`/api/${API_VERSION}/templates`, templateRoutes);
+
+// Community & Interaction
 app.use(`/api/${API_VERSION}/comments`, commentRoutes);
 app.use(`/api/${API_VERSION}/activities`, activityRoutes);
 

@@ -90,6 +90,21 @@ export class CultureService {
     return this.repository.save(pattern);
   }
 
+  // ── Cas d'usage : mettre à jour un motif ────────────────────────────────────
+  async updatePattern(id: string, dto: UpdatePatternDto, requesterId: string, requesterRole: string): Promise<CulturePattern> {
+    const pattern = await this.repository.findById(id);
+    if (!pattern) { throw new NotFoundError(`Motif #${id}`); }
+
+    // Check permissions (creator or admin can update)
+    if (pattern.createdById !== requesterId && requesterRole !== 'admin') {
+      throw new ForbiddenError('Seul le créateur ou un admin peut modifier');
+    }
+
+    // Update pattern with new data
+    const updated = pattern.update(dto);
+    return this.repository.update(updated);
+  }
+
   // ── Cas d'usage : publier un motif ────────────────────────────────────────
   async publishPattern(id: string, requesterId: string, requesterRole: string): Promise<CulturePattern> {
     if (!['curator', 'admin'].includes(requesterRole)) {
