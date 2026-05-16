@@ -1,6 +1,7 @@
 import { S3 } from '@aws-sdk/client-s3';
 import { IStorageProvider } from '../storage.interface';
 import { v4 as uuid } from 'uuid';
+import 'dotenv/config'
 
 export class AwsProvider implements IStorageProvider {
   private s3 = new S3({

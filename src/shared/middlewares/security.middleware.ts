@@ -2,6 +2,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import type { RequestHandler } from 'express';
+import 'dotenv/config'
 
 // ── Helmet — Headers HTTP de sécurité ─────────────────────────────────────────
 export const helmetMiddleware = helmet({

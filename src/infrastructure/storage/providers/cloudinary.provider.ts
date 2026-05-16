@@ -1,5 +1,6 @@
 import cloudinary from 'cloudinary';
 import { IStorageProvider, UploadResult } from '../storage.interface';
+import 'dotenv/config'
 
 cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,

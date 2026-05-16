@@ -317,7 +317,29 @@ router.get('/:slug', publicApiRateLimiter, controller.getBySlug);
  *       422:
  *         $ref: '#/components/responses/ValidationError'
  */
-router.post('/', authenticate, authRateLimiter, uploadSvg.single('svgFile'), controller.create);
+router.post('/', authenticate, authRateLimiter, uploadSvg.fields([
+  { name: 'svgFile', maxCount: 1 },
+  { name: 'symbolImage_0', maxCount: 1 },
+  { name: 'symbolImage_1', maxCount: 1 },
+  { name: 'symbolImage_2', maxCount: 1 },
+  { name: 'symbolImage_3', maxCount: 1 },
+  { name: 'symbolImage_4', maxCount: 1 },
+  { name: 'symbolImage_5', maxCount: 1 },
+  { name: 'symbolImage_6', maxCount: 1 },
+  { name: 'symbolImage_7', maxCount: 1 },
+  { name: 'symbolImage_8', maxCount: 1 },
+  { name: 'symbolImage_9', maxCount: 1 },
+  { name: 'symbolImage_10', maxCount: 1 },
+  { name: 'symbolImage_11', maxCount: 1 },
+  { name: 'symbolImage_12', maxCount: 1 },
+  { name: 'symbolImage_13', maxCount: 1 },
+  { name: 'symbolImage_14', maxCount: 1 },
+  { name: 'symbolImage_15', maxCount: 1 },
+  { name: 'symbolImage_16', maxCount: 1 },
+  { name: 'symbolImage_17', maxCount: 1 },
+  { name: 'symbolImage_18', maxCount: 1 },
+  { name: 'symbolImage_19', maxCount: 1 },
+]), controller.create);
 
 /**
  * @swagger
@@ -537,7 +559,29 @@ router.post('/', authenticate, authRateLimiter, uploadSvg.single('svgFile'), con
  *       422:
  *         $ref: '#/components/responses/ValidationError'
  */
-router.patch('/:id', authenticate, authRateLimiter, uploadSvg.single('svgFile'), controller.update);
+router.patch('/:id', authenticate, authRateLimiter, uploadSvg.fields([
+  { name: 'svgFile', maxCount: 1 },
+  { name: 'symbolImage_0', maxCount: 1 },
+  { name: 'symbolImage_1', maxCount: 1 },
+  { name: 'symbolImage_2', maxCount: 1 },
+  { name: 'symbolImage_3', maxCount: 1 },
+  { name: 'symbolImage_4', maxCount: 1 },
+  { name: 'symbolImage_5', maxCount: 1 },
+  { name: 'symbolImage_6', maxCount: 1 },
+  { name: 'symbolImage_7', maxCount: 1 },
+  { name: 'symbolImage_8', maxCount: 1 },
+  { name: 'symbolImage_9', maxCount: 1 },
+  { name: 'symbolImage_10', maxCount: 1 },
+  { name: 'symbolImage_11', maxCount: 1 },
+  { name: 'symbolImage_12', maxCount: 1 },
+  { name: 'symbolImage_13', maxCount: 1 },
+  { name: 'symbolImage_14', maxCount: 1 },
+  { name: 'symbolImage_15', maxCount: 1 },
+  { name: 'symbolImage_16', maxCount: 1 },
+  { name: 'symbolImage_17', maxCount: 1 },
+  { name: 'symbolImage_18', maxCount: 1 },
+  { name: 'symbolImage_19', maxCount: 1 },
+]), controller.update);
 
 router.patch('/:id/publish', authenticate, requireCurator, controller.publish);
 
