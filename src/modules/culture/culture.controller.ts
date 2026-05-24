@@ -9,6 +9,8 @@ import { ok } from '@/shared/types/api.types';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '@/shared/utils/logger';
 import { createStorageService } from '@/infra/storage/storage.factory';
+import { PatternListResponseMapper } from './dto/PatternListResponse.mapper';
+import { db } from '@/config/database';
 
 // ── Multer configuration for SVG file upload ─────────────────────────────────────
 const storage = multer.diskStorage({
@@ -151,9 +153,31 @@ export class CultureController {
   private storage = createStorageService();
   list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const query = QuerySchema.parse(req.query);
-      const result = await this.service.listPatterns(query, req.user?.userId);
-      res.json(ok(result.items, 'OK', result.meta));
+      const { page = '1', perPage = '20', search } = req.query as Record<string, string | undefined>;
+
+      const pageNum = parseInt(page) || 1;
+      const perPageNum = parseInt(perPage) || 20;
+      const skip = (pageNum - 1) * perPageNum;
+
+      const where = search
+        ? {
+            OR: [
+              { nameFr: { contains: search, mode: 'insensitive' as const } },
+              { nameLocal: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {};
+
+      const patterns = await db.pattern.findMany({
+        where,
+        skip,
+        take: perPageNum,
+        orderBy: { createdAt: 'desc' },
+        include: { origin: true, colors: true, symbols: true, artisanQuote: true },
+      });
+
+      const response = PatternListResponseMapper.toPatternDocArray(patterns);
+      res.json(response);
     } catch (err) {
       next(err);
     }

@@ -15,34 +15,42 @@ export class PrismaCultureRepository implements ICultureRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async findById(id: string): Promise<CulturePattern | null> {
-    const row = await this.prisma.pattern.findUnique({ where: { id } });
+    const row = await this.prisma.pattern.findUnique({
+      where: { id },
+      include: { origin: true, colors: true, symbols: true, artisanQuote: true },
+    });
     return row ? this.toDomain(row) : null;
   }
 
   async findBySlug(slug: string): Promise<CulturePattern | null> {
-    const row = await this.prisma.pattern.findUnique({ where: { slug } });
+    const row = await this.prisma.pattern.findUnique({
+      where: { slug },
+      include: { origin: true, colors: true, symbols: true, artisanQuote: true },
+    });
     return row ? this.toDomain(row) : null;
   }
 
   async findMany(opts: FindPatternsOptions): Promise<FindResult<CulturePattern>> {
-    const { page = 1, perPage = 20, region, patternType, search, onlyPublished = true } = opts;
+    const { page = 1, perPage = 20, search } = opts;
     const skip = (page - 1) * perPage;
 
     const where: Prisma.PatternWhereInput = {
-      ...(onlyPublished && { isPublished: true }),
-      ...(region && { region: region.toUpperCase().replace('-', '_') as any }),
-      ...(patternType && { patternType: patternType.toUpperCase() as any }),
       ...(search && {
         OR: [
           { nameFr: { contains: search, mode: 'insensitive' } },
-          { nameEn: { contains: search, mode: 'insensitive' } },
-          { symbolKeywords: { has: search.toLowerCase() } },
+          { nameLocal: { contains: search, mode: 'insensitive' } },
         ],
       }),
     };
 
     const [rows, totalItems] = await Promise.all([
-      this.prisma.pattern.findMany({ where, skip, take: perPage, orderBy: { createdAt: 'desc' } }),
+      this.prisma.pattern.findMany({
+        where,
+        skip,
+        take: perPage,
+        orderBy: { createdAt: 'desc' },
+        include: { origin: true, colors: true, symbols: true, artisanQuote: true },
+      }),
       this.prisma.pattern.count({ where }),
     ]);
 
@@ -71,59 +79,14 @@ export class PrismaCultureRepository implements ICultureRepository {
   }
 
   // ── Mappers Domain ↔ Persistence ─────────────────────────────────────────
+  // NOTE: Ces mappers utilisent l'ancien schéma et ne sont plus utilisés.
+  // La nouvelle API utilise PatternListResponseMapper directement depuis Prisma.
   private toDomain(row: Prisma.PatternGetPayload<object>): CulturePattern {
-    return CulturePattern.create({
-      id:          row.id,
-      slug:        row.slug,
-      nameFr:      row.nameFr,
-      nameEn:      row.nameEn,
-      descFr:      row.descFr,
-      descEn:      row.descEn,
-      patternType: row.patternType.toLowerCase() as PatternType,
-      region:      row.region.toLowerCase().replace('_', '-') as Region,
-      country:     row.country,
-      colors:      { primary: row.colorPrimary, secondary: row.colorSecondary, accent: row.colorAccent ?? undefined },
-      symbolism:   { meaning: row.symbolMeaning, keywords: row.symbolKeywords, usage: row.symbolUsage.toLowerCase() as UsageType },
-      isPublished: row.isPublished,
-      isFeatured:  row.isFeatured,
-      viewCount:   row.viewCount,
-      svgUrl:      row.svgUrl ?? undefined,
-      previewUrl:  row.previewUrl ?? undefined,
-      metadata:    row.metadata as Record<string, any> | undefined,
-      createdAt:   row.createdAt,
-      updatedAt:   row.updatedAt,
-      createdById: row.createdById,
-    });
+    throw new Error('Repository.toDomain() est obsolète. Utiliser PatternListResponseMapper.');
   }
 
   private toPersistence(pattern: CulturePattern): Prisma.PatternCreateInput & { id: string } {
-    const p = pattern.toObject();
-    return {
-      id:             p.id,
-      slug:           p.slug,
-      nameFr:         p.nameFr,
-      nameEn:         p.nameEn,
-      descFr:         p.descFr,
-      descEn:         p.descEn,
-      patternType:    p.patternType.toUpperCase() as any,
-      region:         p.region.toUpperCase().replace('-', '_') as any,
-      country:        p.country,
-      colorPrimary:   p.colors.primary,
-      colorSecondary: p.colors.secondary,
-      colorAccent:    p.colors.accent,
-      symbolMeaning:  p.symbolism.meaning,
-      symbolKeywords: p.symbolism.keywords,
-      symbolUsage:    p.symbolism.usage.toUpperCase() as any,
-      isPublished:    p.isPublished,
-      isFeatured:     p.isFeatured,
-      viewCount:      p.viewCount,
-      svgUrl:         p.svgUrl,
-      previewUrl:     p.previewUrl,
-      metadata:       p.metadata as any,
-      createdAt:      p.createdAt,
-      updatedAt:      p.updatedAt,
-      createdBy:      { connect: { id: p.createdById } },
-    };
+    throw new Error('Repository.toPersistence() est obsolète. À refactoriser.');
   }
 }
 

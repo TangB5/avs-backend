@@ -44,3 +44,20 @@
 {"level":"info","message":"🌍 Environnement : production","timestamp":"2026-05-16T17:19:09.709Z"}
 {"level":"warn","message":"Signal SIGTERM reçu — arrêt gracieux…","timestamp":"2026-05-16T17:19:14.550Z"}
 {"level":"warn","message":"Signal SIGTERM reçu — arrêt gracieux…","timestamp":"2026-05-16T17:19:14.558Z"}
+{"level":"info","message":"✔ Base de données connectée","timestamp":"2026-05-24T17:24:13.333Z"}
+{"level":"info","message":"🚀 AVS Backend démarré — http://localhost:4000","timestamp":"2026-05-24T17:24:13.346Z"}
+{"level":"info","message":"📚 Swagger UI : http://localhost:4000/api-docs","timestamp":"2026-05-24T17:24:13.346Z"}
+{"level":"info","message":"📋 Health     : http://localhost:4000/api/v1/health","timestamp":"2026-05-24T17:24:13.347Z"}
+{"level":"info","message":"🌍 Environnement : production","timestamp":"2026-05-24T17:24:13.347Z"}
+{"level":"warn","message":"Signal SIGTERM reçu — arrêt gracieux…","timestamp":"2026-05-24T17:24:15.111Z"}
+{"level":"info","message":"✔ Base de données déconnectée","timestamp":"2026-05-24T17:24:15.124Z"}
+{"level":"info","message":"✔ Base de données connectée","timestamp":"2026-05-24T17:24:42.031Z"}
+{"level":"info","message":"🚀 AVS Backend démarré — http://localhost:4000","timestamp":"2026-05-24T17:24:42.045Z"}
+{"level":"info","message":"📚 Swagger UI : http://localhost:4000/api-docs","timestamp":"2026-05-24T17:24:42.047Z"}
+{"level":"info","message":"📋 Health     : http://localhost:4000/api/v1/health","timestamp":"2026-05-24T17:24:42.047Z"}
+{"level":"info","message":"🌍 Environnement : production","timestamp":"2026-05-24T17:24:42.052Z"}
+{"level":"info","message":"✔ Base de données connectée","timestamp":"2026-05-24T17:29:14.328Z"}
+{"level":"info","message":"🚀 AVS Backend démarré — http://localhost:4000","timestamp":"2026-05-24T17:29:14.376Z"}
+{"level":"info","message":"📚 Swagger UI : http://localhost:4000/api-docs","timestamp":"2026-05-24T17:29:14.377Z"}
+{"level":"info","message":"📋 Health     : http://localhost:4000/api/v1/health","timestamp":"2026-05-24T17:29:14.381Z"}
+{"level":"info","message":"🌍 Environnement : production","timestamp":"2026-05-24T17:29:14.387Z"}
