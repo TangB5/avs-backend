@@ -10,7 +10,6 @@ import { StatusCodes } from 'http-status-codes';
 import { logger } from '@/shared/utils/logger';
 import { createStorageService } from '@/infra/storage/storage.factory';
 
-
 // ── Multer configuration for SVG file upload ─────────────────────────────────────
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
@@ -31,9 +30,12 @@ const storage = multer.diskStorage({
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const isSvgField = file.fieldname === 'svgFile';
   const isImageField = file.fieldname.startsWith('symbolImage_');
-  
+
   if (isSvgField) {
-    if (file.mimetype === 'image/svg+xml' || path.extname(file.originalname).toLowerCase() === '.svg') {
+    if (
+      file.mimetype === 'image/svg+xml' ||
+      path.extname(file.originalname).toLowerCase() === '.svg'
+    ) {
       cb(null, true);
     } else {
       cb(new Error('Only SVG files are allowed for svgFile'));
@@ -158,7 +160,7 @@ export class CultureController {
   };
 
   getBySlug = async (
-    req: Request<{ slug: string }>, // ✅ ici
+    req: Request<{ slug: string }>,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
@@ -203,7 +205,9 @@ export class CultureController {
           formData.svgKey = uploadResult.key;
           formData.svgProvider = uploadResult.provider;
 
-          logger.info(`[CultureController.create] SVG uploaded: ${uploadResult.provider} - ${uploadResult.key}`);
+          logger.info(
+            `[CultureController.create] SVG uploaded: ${uploadResult.provider} - ${uploadResult.key}`,
+          );
         }
       } else {
         logger.info(`[CultureController.create] No SVG files in req.files`);
@@ -211,32 +215,43 @@ export class CultureController {
 
       // Handle symbol images if uploaded
       const symbolImages: { [key: string]: string } = {};
-      
+
       if (req.files && typeof req.files === 'object') {
         logger.info(`[CultureController.create] Processing symbol images from req.files`);
         const fileKeys = Object.keys(req.files);
         logger.info(`[CultureController.create] Available fields: ${fileKeys.join(', ')}`);
-        
+
         for (const [fieldname, files] of Object.entries(req.files)) {
-          if (fieldname.startsWith('symbolImage_') && Array.isArray(files) && files.length > 0 && files[0]) {
+          if (
+            fieldname.startsWith('symbolImage_') &&
+            Array.isArray(files) &&
+            files.length > 0 &&
+            files[0]
+          ) {
             const symbolIndex = fieldname.replace('symbolImage_', '');
-            logger.info(`[CultureController.create] Uploading symbol image ${symbolIndex}: ${files[0].originalname}`);
+            logger.info(
+              `[CultureController.create] Uploading symbol image ${symbolIndex}: ${files[0].originalname}`,
+            );
             const uploadResult = await this.storage.upload(files[0], 'symbols');
             symbolImages[symbolIndex] = uploadResult.url;
-            logger.info(`[CultureController.create] Symbol image uploaded: ${uploadResult.provider} - ${uploadResult.key} -> ${uploadResult.url}`);
+            logger.info(
+              `[CultureController.create] Symbol image uploaded: ${uploadResult.provider} - ${uploadResult.key} -> ${uploadResult.url}`,
+            );
           }
         }
       } else {
         logger.info(`[CultureController.create] No req.files object`);
       }
 
-      logger.info(`[CultureController.create] Total symbol images collected: ${Object.keys(symbolImages).length}`);
+      logger.info(
+        `[CultureController.create] Total symbol images collected: ${Object.keys(symbolImages).length}`,
+      );
 
       // Add image URLs to symbols
       if (formData.symbols && Array.isArray(formData.symbols)) {
         formData.symbols = formData.symbols.map((symbol: any, index: number) => ({
           ...symbol,
-          imageUrl: symbolImages[index.toString()] || symbol.imageUrl
+          imageUrl: symbolImages[index.toString()] || symbol.imageUrl,
         }));
       }
 
@@ -333,7 +348,6 @@ export class CultureController {
         }
       }
 
-      
       if (req.files && typeof req.files === 'object' && 'svgFile' in req.files) {
         const svgFiles = req.files.svgFile;
         logger.info(`[CultureController.update] SVG files received: ${svgFiles?.length || 0}`);
@@ -351,31 +365,53 @@ export class CultureController {
       }
 
       // Handle symbol images if uploaded
-      const symbolImages: { [key: string]: string } = {};
-      
+      const symbolImages: Record<string, string> = {};
+
       if (req.files && typeof req.files === 'object') {
-        logger.info(`[CultureController.update] Processing symbol images from req.files`);
-        const fileKeys = Object.keys(req.files);
-        logger.info(`[CultureController.update] Available fields: ${fileKeys.join(', ')}`);
-        
-        for (const [fieldname, files] of Object.entries(req.files)) {
-          if (fieldname.startsWith('symbolImage_') && Array.isArray(files) && files.length > 0 && files[0]) {
+        logger.info(`[CultureController.create] Processing symbol images from req.files`);
+
+        const uploadPromises = Object.entries(req.files).map(async ([fieldname, files]) => {
+          if (
+            fieldname.startsWith('symbolImage_') &&
+            Array.isArray(files) &&
+            files.length > 0 &&
+            files[0]
+          ) {
             const symbolIndex = fieldname.replace('symbolImage_', '');
-            logger.info(`[CultureController.update] Uploading symbol image ${symbolIndex}: ${files[0].originalname}`);
+
+            logger.info(
+              `[CultureController.create] Uploading symbol image ${symbolIndex}: ${files[0].originalname}`,
+            );
+
             const uploadResult = await this.storage.upload(files[0], 'symbols');
-            symbolImages[symbolIndex] = uploadResult.url;
-            logger.info(`[CultureController.update] Symbol image uploaded: ${uploadResult.provider} - ${uploadResult.key}`);
+
+            return {
+              index: symbolIndex,
+              url: uploadResult.url,
+            };
           }
-        }
-      } else {
-        logger.info(`[CultureController.update] No req.files object`);
+
+          return null;
+        });
+
+        const results = await Promise.all(uploadPromises);
+
+        results.forEach((res) => {
+          if (res) {
+            symbolImages[res.index] = res.url;
+          }
+        });
+
+        logger.info(
+          `[CultureController.create] Total symbol images collected: ${Object.keys(symbolImages).length}`,
+        );
       }
 
       // Add image URLs to symbols
       if (formData.symbols && Array.isArray(formData.symbols)) {
         formData.symbols = formData.symbols.map((symbol: any, index: number) => ({
           ...symbol,
-          imageUrl: symbolImages[index.toString()] || symbol.imageUrl
+          imageUrl: symbolImages[index.toString()] || symbol.imageUrl,
         }));
       }
 

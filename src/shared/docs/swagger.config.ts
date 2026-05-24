@@ -38,9 +38,15 @@ Authorization: Bearer <votre_token>
       { url: 'https://api.avs-standard.com', description: '🚀 Production' },
     ],
     tags: [
-      { name: 'System',   description: 'Santé et métadonnées de l\'API' },
-      { name: 'Patterns', description: 'Motifs culturels africains (CRUD)' },
-      { name: 'Auth',     description: 'Authentification & gestion des tokens' },
+      { name: 'System',     description: 'Santé et métadonnées de l\'API' },
+      { name: 'Auth',       description: 'Authentification & gestion des tokens' },
+      { name: 'Users',      description: 'Gestion des utilisateurs et profils' },
+      { name: 'Patterns',   description: 'Motifs culturels africains (CRUD)' },
+      { name: 'Artisans',   description: 'Profils d\'artisans africains' },
+      { name: 'Palettes',   description: 'Palettes de couleurs africaines' },
+      { name: 'Templates',  description: 'Templates UI/UX réutilisables' },
+      { name: 'Comments',   description: 'Système de commentaires' },
+      { name: 'Activities', description: 'Journal d\'activités utilisateur' },
     ],
     components: { 
       securitySchemes: {

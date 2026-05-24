@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { CultureController, uploadSvg } from '../controllers/culture.controller';
-import { CultureService }    from '@/modules/culture/application/culture.service';
-import { PrismaCultureRepository } from '@/modules/culture/infrastructure/PrismaCultureRepository';
+import { CultureController, uploadSvg } from './culture.controller';
+import { CultureService }    from './application/culture.service';
+import { PrismaCultureRepository } from './infrastructure/PrismaCultureRepository';
 import { authenticate, requireCurator, requireAdmin } from '@/shared/middlewares/auth.middleware';
 import { publicApiRateLimiter, authRateLimiter } from '@/shared/middlewares/security.middleware';
 import { db } from '@/config/database';
@@ -18,12 +18,12 @@ const controller  = new CultureController(service);
  * /api/v1/patterns:
  *   get:
  *     summary: Lister les motifs culturels africains
+ *     tags: [Patterns]
  *     description: >
  *       Retourne la liste paginée des motifs (Ndop, Adinkra, Kente, Bogolan, Wax…).
  *       Sans authentification, seuls les motifs publiés sont retournés.
  *       Avec authentification, les utilisateurs peuvent voir leurs propres brouillons.
  *       Les motifs retournés incluent toutes les informations du formulaire 3 étapes.
- *     tags: [Patterns]
  *     parameters:
  *       - in: query
  *         name: page
@@ -120,6 +120,7 @@ router.get('/:slug', publicApiRateLimiter, controller.getBySlug);
  * /api/v1/patterns:
  *   post:
  *     summary: Créer un nouveau motif culturel
+ *     tags: [Patterns]
  *     description: >
  *       Crée un motif en statut **non publié**. La publication nécessite
  *       une action séparée par un curateur ou un admin.
@@ -127,7 +128,6 @@ router.get('/:slug', publicApiRateLimiter, controller.getBySlug);
  *       - Étape 1: Identité (noms, type, localisation)
  *       - Étape 2: Description (contexte, symbolisme, usage)
  *       - Étape 3: Couleurs & Assets (palette, fichier SVG, symboles)
- *     tags: [Patterns]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -379,11 +379,11 @@ router.post('/', authenticate, authRateLimiter, uploadSvg.fields([
  * /api/v1/patterns/{id}:
  *   patch:
  *     summary: Mettre à jour un motif culturel
+ *     tags: [Patterns]
  *     description: >
  *       Met à jour un motif existant. Seul le créateur ou un admin peut modifier.
  *       Supporte les mêmes champs que la création (tous optionnels).
  *       Le formulaire correspond au wizard en 3 étapes du frontend.
- *     tags: [Patterns]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -590,8 +590,8 @@ router.patch('/:id/publish', authenticate, requireCurator, controller.publish);
  * /api/v1/patterns/{id}:
  *   delete:
  *     summary: Supprimer un motif culturel
- *     description: Suppression définitive. Requiert le rôle **admin**.
  *     tags: [Patterns]
+ *     description: Suppression définitive. Requiert le rôle **admin**.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -613,3 +613,4 @@ router.patch('/:id/publish', authenticate, requireCurator, controller.publish);
 router.delete('/:id', authenticate, requireAdmin, controller.remove);
 
 export default router;
+

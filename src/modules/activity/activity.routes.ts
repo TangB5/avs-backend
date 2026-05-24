@@ -18,6 +18,7 @@ const controller = new ActivityController(service);
  * /api/v1/activities:
  *   get:
  *     summary: Get user activity feed
+ *     tags: [Activities]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -40,6 +41,7 @@ router.get('/', authenticate, controller.getUserActivity);
  * /api/v1/stats/global:
  *   get:
  *     summary: Get global platform statistics
+ *     tags: [Activities]
  *     responses:
  *       200:
  *         description: Global statistics

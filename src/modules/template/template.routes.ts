@@ -17,6 +17,7 @@ const controller = new TemplateController(service);
  * /api/v1/templates:
  *   get:
  *     summary: List all published templates
+ *     tags: [Templates]
  *     parameters:
  *       - in: query
  *         name: page
@@ -41,6 +42,7 @@ router.get('/', publicApiRateLimiter, controller.list);
  * /api/v1/templates/featured:
  *   get:
  *     summary: Get featured templates
+ *     tags: [Templates]
  *     responses:
  *       200:
  *         description: List of featured templates
@@ -52,6 +54,7 @@ router.get('/featured', publicApiRateLimiter, controller.featured);
  * /api/v1/templates/{id}:
  *   get:
  *     summary: Get template by ID
+ *     tags: [Templates]
  *     parameters:
  *       - in: path
  *         name: id

@@ -26,6 +26,9 @@ export interface CreatePatternDto {
   country:     string;
   colors:      CulturePatternProps['colors'];
   symbolism:   CulturePatternProps['symbolism'];
+  svgUrl?:     string;
+  previewUrl?: string;
+  metadata?:   Record<string, any>;
   createdById: string;
 }
 
@@ -53,7 +56,7 @@ export class CultureService {
     const { items, totalItems } = await this.repository.findMany({
       ...query,
       page, perPage,
-      onlyPublished: !requesterId, // Les non-connectés voient uniquement les publiés
+      onlyPublished: !requesterId, 
     });
 
     return { items, meta: buildMeta(totalItems, page, perPage) };
@@ -77,7 +80,18 @@ export class CultureService {
     }
 
     const pattern = CulturePattern.create({
-      ...dto,
+      nameFr:      dto.nameFr,
+      nameEn:      dto.nameEn,
+      descFr:      dto.descFr,
+      descEn:      dto.descEn,
+      patternType: dto.patternType,
+      region:      dto.region,
+      country:     dto.country,
+      colors:      dto.colors,
+      symbolism:   dto.symbolism,
+      svgUrl:      dto.svgUrl,
+      previewUrl:  dto.previewUrl,
+      metadata:    dto.metadata,
       id:          randomUUID(),
       slug,
       isPublished: false,
@@ -85,6 +99,7 @@ export class CultureService {
       viewCount:   0,
       createdAt:   new Date(),
       updatedAt:   new Date(),
+      createdById: dto.createdById,
     });
 
     return this.repository.save(pattern);

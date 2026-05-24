@@ -17,6 +17,7 @@ const controller = new UserController(service);
  * /api/v1/users/me:
  *   get:
  *     summary: Get current user profile
+ *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -32,6 +33,7 @@ router.get('/me', authenticate, controller.getMe);
  * /api/v1/users/me/stats:
  *   get:
  *     summary: Get user statistics
+ *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -47,6 +49,7 @@ router.get('/me/stats', authenticate, controller.getStats);
  * /api/v1/users/me/patterns:
  *   get:
  *     summary: Get user patterns
+ *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -70,6 +73,7 @@ router.get('/me/patterns', authenticate, controller.getPatterns);
  * /api/v1/users/me/activity:
  *   get:
  *     summary: Get user activity
+ *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -93,6 +97,7 @@ router.get('/me/activity', authenticate, controller.getActivity);
  * /api/v1/users/me:
  *   patch:
  *     summary: Update user profile
+ *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -123,6 +128,7 @@ router.patch('/me', authenticate, controller.update);
  * /api/v1/users/me:
  *   delete:
  *     summary: Delete user account
+ *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     responses:

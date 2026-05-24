@@ -20,7 +20,7 @@ import authRoutes from '@/modules/auth/auth.routes';
 import userRoutes from '@/modules/user/user.routes';
 
 // ── Cultural Content ───────────────────────────────────────────────────────
-import cultureRoutes from '@/api/routes/culture.routes';
+import cultureRoutes from '@/modules/culture/culture.routes';
 import artisanRoutes from '@/modules/artisan/artisan.routes';
 
 // ── Creative Tools & Resources ─────────────────────────────────────────────

@@ -24,23 +24,6 @@ enum PatternType {
   WAX
 }
 
-enum Region {
-  WEST_AFRICA
-  EAST_AFRICA
-  CENTRAL_AFRICA
-  NORTH_AFRICA
-  SOUTH_AFRICA
-  DIASPORA
-}
-
-enum UsageType {
-  CEREMONIAL
-  DAILY
-  ROYAL
-  SPIRITUAL
-  UNIVERSAL
-}
-
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -58,7 +41,6 @@ model User {
   verified      Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  patterns      Pattern[]
   accounts      Account[]
   sessions      Session[]
   artisan       Artisan?
@@ -68,37 +50,79 @@ model User {
 }
 
 model Pattern {
-  id               String      @id @default(cuid())
-  slug             String      @unique
-  nameFr           String
-  nameEn           String
-  descFr           String      @db.Text
-  descEn           String      @db.Text
-  patternType      PatternType
-  region           Region
-  country          String      @db.Char(2)
-  colorPrimary     String
-  colorSecondary   String
-  colorAccent      String?
-  symbolMeaning    String      @db.Text
-  symbolKeywords   String[]
-  symbolUsage      UsageType
-  isPublished      Boolean     @default(false)
-  isFeatured       Boolean     @default(false)
-  viewCount        Int         @default(0)
-  downloadCount    Int         @default(0)
-  svgUrl           String?
-  previewUrl       String?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-  createdById      String
-  createdBy        User        @relation(fields: [createdById], references: [id])
-  comments         Comment[]
+  id            String        @id @default(cuid())
+  slug          String        @unique
+  nameFr        String
+  nameLocal     String
+  type          PatternType
+  cssClass      String
+  era           String?
+  license       String?
+  summary       String        @db.Text
+  history       String        @db.Text
+  technique     String        @db.Text
+  symbolism     String        @db.Text
+  ceremonial    String        @db.Text
+  sources       String[]
+  downloads     Int           @default(0)
+  views         Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  origin        Origin?
+  colors        PatternColor[]
+  symbols       Symbol[]
+  artisanQuote  ArtisanQuote?
+  comments      Comment[]
   @@index([slug])
-  @@index([patternType])
-  @@index([region])
-  @@index([isPublished])
+  @@index([type])
   @@map("patterns")
+}
+
+model Origin {
+  id        String   @id @default(cuid())
+  people    String
+  region    String
+  country   String
+  flag      String
+  coords    Float[]
+  patternId String   @unique
+  pattern   Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  @@map("origins")
+}
+
+model PatternColor {
+  id        String   @id @default(cuid())
+  hex       String
+  name      String
+  meaning   String   @db.Text
+  patternId String
+  pattern   Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  @@map("pattern_colors")
+}
+
+model Symbol {
+  id         String   @id @default(cuid())
+  name       String
+  nameFr     String
+  cssPreview String
+  imageUrl   String
+  meaning    String   @db.Text
+  usage      String   @db.Text
+  sacred     Boolean  @default(false)
+  patternId  String
+  pattern    Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  @@map("symbols")
+}
+
+model ArtisanQuote {
+  id        String   @id @default(cuid())
+  text      String   @db.Text
+  author    String
+  role      String
+  country   String
+  patternId String   @unique
+  pattern   Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  @@map("artisan_quotes")
 }
 
 model Account {

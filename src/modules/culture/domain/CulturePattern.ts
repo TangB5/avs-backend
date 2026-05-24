@@ -23,6 +23,9 @@ export interface CulturePatternProps {
   isPublished: boolean;
   isFeatured:  boolean;
   viewCount:   number;
+  svgUrl?:     string;
+  previewUrl?: string;
+  metadata?:   Record<string, any>;
   createdAt:   Date;
   updatedAt:   Date;
   createdById: string;
@@ -63,6 +66,9 @@ export class CulturePattern {
   get isPublished(): boolean          { return this.props.isPublished; }
   get isFeatured():  boolean          { return this.props.isFeatured; }
   get viewCount():   number           { return this.props.viewCount; }
+  get svgUrl():      string | undefined { return this.props.svgUrl; }
+  get previewUrl():  string | undefined { return this.props.previewUrl; }
+  get metadata():    Record<string, any> | undefined { return this.props.metadata; }
   get colors():      PatternColors    { return { ...this.props.colors }; }
   get symbolism():   PatternSymbolism { return { ...this.props.symbolism }; }
   get region():      Region           { return this.props.region; }
