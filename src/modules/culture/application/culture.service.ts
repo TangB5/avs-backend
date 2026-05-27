@@ -9,30 +9,31 @@
 // =============================================================================
 
 import { randomUUID } from 'crypto';
-import { CulturePattern, type CulturePatternProps } from '../domain/CulturePattern';
+import { CulturePattern, type CulturePatternProps, type PatternType } from '../domain/CulturePattern';
 import type { ICultureRepository, FindPatternsOptions } from '../domain/ICultureRepository';
 import type { PaginationMeta } from '@/shared/types/api.types';
 import { NotFoundError, ConflictError, ForbiddenError } from '@/shared/errors/AppError';
 import { buildMeta, parsePagination } from '@/shared/utils/pagination';
 
 // ── DTOs (Data Transfer Objects) ──────────────────────────────────────────────
+
 export interface CreatePatternDto {
-  nameFr:      string;
-  nameEn:      string;
-  descFr:      string;
-  descEn:      string;
-  patternType: CulturePatternProps['patternType'];
-  region:      CulturePatternProps['region'];
-  country:     string;
-  colors:      CulturePatternProps['colors'];
-  symbolism:   CulturePatternProps['symbolism'];
-  svgUrl?:     string;
-  previewUrl?: string;
-  metadata?:   Record<string, any>;
-  createdById: string;
+  name:       string | null;
+  nameLocal:  string;
+  imgUrl?:    string | null;
+  type:       PatternType;
+  cssClass:   string;
+  era?:       string | null;
+  license?:   string | null;
+  summary:    string;
+  history:    string;
+  technique:  string;
+  symbolism:  string;
+  ceremonial: string;
+  sources?:   string[];
 }
 
-export interface UpdatePatternDto extends Partial<Omit<CreatePatternDto, 'createdById'>> {}
+export interface UpdatePatternDto extends Partial<CreatePatternDto> {}
 
 export interface QueryPatternDto extends FindPatternsOptions {
   page?:    number;
@@ -46,7 +47,6 @@ export interface PatternListResult {
 
 // ── Service ───────────────────────────────────────────────────────────────────
 export class CultureService {
-  // Injection de dépendance via constructeur (Inversion of Control)
   constructor(private readonly repository: ICultureRepository) {}
 
   // ── Cas d'usage : lister les motifs ───────────────────────────────────────
@@ -56,7 +56,7 @@ export class CultureService {
     const { items, totalItems } = await this.repository.findMany({
       ...query,
       page, perPage,
-      onlyPublished: !requesterId, 
+      onlyPublished: !requesterId,
     });
 
     return { items, meta: buildMeta(totalItems, page, perPage) };
@@ -73,62 +73,82 @@ export class CultureService {
 
   // ── Cas d'usage : créer un motif ──────────────────────────────────────────
   async createPattern(dto: CreatePatternDto): Promise<CulturePattern> {
-    const slug = this.generateSlug(dto.nameFr);
+    const slug = this.generateSlug(dto.nameLocal);
 
     if (await this.repository.exists(slug)) {
       throw new ConflictError(`Motif avec le slug "${slug}"`);
     }
 
     const pattern = CulturePattern.create({
-      nameFr:      dto.nameFr,
-      nameEn:      dto.nameEn,
-      descFr:      dto.descFr,
-      descEn:      dto.descEn,
-      patternType: dto.patternType,
-      region:      dto.region,
-      country:     dto.country,
-      colors:      dto.colors,
-      symbolism:   dto.symbolism,
-      svgUrl:      dto.svgUrl,
-      previewUrl:  dto.previewUrl,
-      metadata:    dto.metadata,
       id:          randomUUID(),
       slug,
+      name:        dto.name,
+      nameLocal:   dto.nameLocal,
+      imgUrl:      dto.imgUrl ?? null,
+      type:        dto.type,
+      cssClass:    dto.cssClass,
+      era:         dto.era ?? null,
+      license:     dto.license ?? null,
+      summary:     dto.summary,
+      history:     dto.history,
+      technique:   dto.technique,
+      symbolism:   dto.symbolism,
+      ceremonial:  dto.ceremonial,
+      sources:     dto.sources ?? [],
+      downloads:   0,
+      views:       0,
       isPublished: false,
       isFeatured:  false,
-      viewCount:   0,
       createdAt:   new Date(),
       updatedAt:   new Date(),
-      createdById: dto.createdById,
     });
 
     return this.repository.save(pattern);
   }
 
-  // ── Cas d'usage : mettre à jour un motif ────────────────────────────────────
-  async updatePattern(id: string, dto: UpdatePatternDto, requesterId: string, requesterRole: string): Promise<CulturePattern> {
+  // ── Cas d'usage : mettre à jour un motif ──────────────────────────────────
+  async updatePattern(id: string, dto: UpdatePatternDto, requesterRole: string): Promise<CulturePattern> {
     const pattern = await this.repository.findById(id);
     if (!pattern) { throw new NotFoundError(`Motif #${id}`); }
 
-    // Check permissions (creator or admin can update)
-    if (pattern.createdById !== requesterId && requesterRole !== 'admin') {
-      throw new ForbiddenError('Seul le créateur ou un admin peut modifier');
+    if (!['curator', 'admin'].includes(requesterRole)) {
+      throw new ForbiddenError('Seuls les curateurs et admins peuvent modifier');
     }
 
-    // Update pattern with new data
     const updated = pattern.update(dto);
     return this.repository.update(updated);
   }
 
   // ── Cas d'usage : publier un motif ────────────────────────────────────────
-  async publishPattern(id: string, requesterId: string, requesterRole: string): Promise<CulturePattern> {
+  async publishPattern(id: string, requesterRole: string): Promise<CulturePattern> {
     if (!['curator', 'admin'].includes(requesterRole)) {
       throw new ForbiddenError('Seuls les curateurs et admins peuvent publier');
     }
+
     const pattern = await this.repository.findById(id);
     if (!pattern) { throw new NotFoundError(`Motif #${id}`); }
 
     return this.repository.update(pattern.publish());
+  }
+
+  // ── Cas d'usage : mettre en avant un motif ────────────────────────────────
+  async featurePattern(id: string, requesterRole: string): Promise<CulturePattern> {
+    if (requesterRole !== 'admin') {
+      throw new ForbiddenError('Seuls les admins peuvent mettre en avant un motif');
+    }
+
+    const pattern = await this.repository.findById(id);
+    if (!pattern) { throw new NotFoundError(`Motif #${id}`); }
+
+    return this.repository.update(pattern.feature());
+  }
+
+  // ── Cas d'usage : incrémenter les téléchargements ─────────────────────────
+  async trackDownload(slug: string): Promise<CulturePattern> {
+    const pattern = await this.repository.findBySlug(slug);
+    if (!pattern) { throw new NotFoundError(`Motif "${slug}"`); }
+
+    return this.repository.update(pattern.incrementDownload());
   }
 
   // ── Cas d'usage : supprimer un motif ──────────────────────────────────────
@@ -136,6 +156,7 @@ export class CultureService {
     if (requesterRole !== 'admin') {
       throw new ForbiddenError('Seuls les admins peuvent supprimer');
     }
+
     const pattern = await this.repository.findById(id);
     if (!pattern) { throw new NotFoundError(`Motif #${id}`); }
 

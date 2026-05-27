@@ -158,7 +158,7 @@ router.get('/:slug', publicApiRateLimiter, controller.getBySlug);
  *                 example: Bamoum Royal Ndop
  *               patternType:
  *                 type: string
- *                 enum: ['kente', 'bogolan', 'adinkra', 'ndebele', 'ndop', 'wax', 'kuba']
+ *                 enum: ['kente', 'bogolan', 'adinkra', 'ndebele', 'ndop', 'wax', 'kuba', 'berber']
  *                 example: ndop
  *               region:
  *                 type: string
@@ -269,8 +269,8 @@ router.get('/:slug', publicApiRateLimiter, controller.getBySlug);
  *                 example: '["Archives du palais de Foumban", "Recherches anthropologiques sur les tissus bamoum"]'
  *               symbols:
  *                 type: string
- *                 description: Tableau JSON de symboles constituants avec name, meaning, usage
- *                 example: '[{"name": "Sankofa", "nameFr": "Sankofa", "cssPreview": "#pattern-sankofa", "meaning": "Retour aux sources", "usage": "spirituel", "sacred": false}]'
+ *                 description: Tableau JSON de symboles constituants avec name, nameFr, meaning, usage, sacred, cssPreview, imageUrl (optionnel)
+ *                 example: '[{"name": "Sankofa", "nameFr": "Sankofa", "cssPreview": "#D4A017", "meaning": "Retour aux sources", "usage": "spirituel", "sacred": false, "imageUrl": "https://cdn.avs-standard.com/symbols/sankofa.png"}]'
  *               
  *               # File upload
  *               svgFile:
@@ -420,7 +420,7 @@ router.post('/', authenticate, authRateLimiter, uploadSvg.fields([
  *                 example: Bamoum Royal Ndop
  *               patternType:
  *                 type: string
- *                 enum: ['kente', 'bogolan', 'adinkra', 'ndebele', 'ndop', 'wax', 'kuba']
+ *                 enum: ['kente', 'bogolan', 'adinkra', 'ndebele', 'ndop', 'wax', 'kuba', 'berber']
  *                 example: ndop
  *               region:
  *                 type: string
@@ -531,8 +531,8 @@ router.post('/', authenticate, authRateLimiter, uploadSvg.fields([
  *                 example: '["Archives du palais de Foumban", "Recherches anthropologiques sur les tissus bamoum"]'
  *               symbols:
  *                 type: string
- *                 description: Tableau JSON de symboles constituants avec name, meaning, usage
- *                 example: '[{"name": "Sankofa", "nameFr": "Sankofa", "cssPreview": "#pattern-sankofa", "meaning": "Retour aux sources", "usage": "spirituel", "sacred": false}]'
+ *                 description: Tableau JSON de symboles constituants avec name, nameFr, meaning, usage, sacred, cssPreview, imageUrl (optionnel)
+ *                 example: '[{"name": "Sankofa", "nameFr": "Sankofa", "cssPreview": "#D4A017", "meaning": "Retour aux sources", "usage": "spirituel", "sacred": false, "imageUrl": "https://cdn.avs-standard.com/symbols/sankofa.png"}]'
  *               
  *               # File upload (optional)
  *               svgFile:

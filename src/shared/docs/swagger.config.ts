@@ -61,7 +61,7 @@ Authorization: Bearer <votre_token>
         // ── Enums ──────────────────────────────────────────────────────────
         PatternType: {
           type: 'string',
-          enum: ['kente','bogolan','adinkra','ndebele','kuba','ndop','wax'],
+          enum: ['kente','bogolan','adinkra','ndebele','kuba','ndop','wax','berber'],
           example: 'ndop',
         },
         Region: {
@@ -97,6 +97,19 @@ Authorization: Bearer <votre_token>
             meaning:  { type: 'string', maxLength: 512, example: 'Royauté, transmission inter-générationnelle' },
             keywords: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 10, example: ['royauté','cameroun','bamoum'] },
             usage:    { $ref: '#/components/schemas/UsageType' },
+          },
+        },
+        PatternSymbol: {
+          type: 'object',
+          required: ['name', 'nameFr', 'meaning', 'usage', 'sacred'],
+          properties: {
+            name:        { type: 'string', maxLength: 128, example: 'Sankofa' },
+            nameFr:      { type: 'string', maxLength: 128, example: 'Retour aux sources' },
+            meaning:     { type: 'string', maxLength: 512, example: 'Symbole du retour aux sources pour avancer vers l\'avenir' },
+            usage:       { type: 'string', maxLength: 256, example: 'Offert lors des transmissions générationnelles' },
+            sacred:      { type: 'boolean', example: false },
+            cssPreview:  { type: 'string', maxLength: 128, example: '#D4A017', description: 'Couleur ou classe CSS pour l\'aperçu' },
+            imageUrl:    { type: 'string', format: 'uri', example: 'https://cdn.avs-standard.com/symbols/sankofa.png', description: 'URL optionnelle vers l\'image du symbole' },
           },
         },
 

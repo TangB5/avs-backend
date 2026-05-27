@@ -4,7 +4,7 @@
 // =============================================================================
 
 import type { Prisma } from '@prisma/client';
-import type { PatternDoc, PatternSymbol, PatternColor } from './PatternResponse.dto';
+import type { PatternDoc, PatternSymbol, PatternColor, PatternSymbolism } from './PatternResponse.dto';
 
 export class PatternListResponseMapper {
   static toPatternDoc(
@@ -20,10 +20,13 @@ export class PatternListResponseMapper {
     return {
       id: pattern.id,
       slug: pattern.slug,
-      nameFr: pattern.nameFr,
+      name: pattern.name,
       nameLocal: pattern.nameLocal,
+      imgUrl: pattern.imgUrl,
       type: pattern.type,
       cssClass: pattern.cssClass,
+      status: pattern.status ?? '',
+      isFeatured: pattern.isFeatured,
       origin: {
         people: pattern.origin?.people ?? '',
         region: pattern.origin?.region ?? '',
@@ -37,7 +40,11 @@ export class PatternListResponseMapper {
       summary: pattern.summary,
       history: pattern.history,
       technique: pattern.technique,
-      symbolism: pattern.symbolism,
+      symbolism: {
+        meaning: pattern.symbolism ?? '',
+        keywords: [],
+        usage: 'universal',
+      } as PatternSymbolism,
       ceremonial: pattern.ceremonial,
       symbols: (pattern.symbols as unknown as PatternSymbol[]) ?? [],
       artisanQuote: pattern.artisanQuote

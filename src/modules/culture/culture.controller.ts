@@ -93,7 +93,7 @@ const CreateSchema = z.object({
   nameFr: z.string().min(2, 'Minimum 2 characters').max(128),
   nameLocal: z.string().min(2, 'Minimum 2 characters').max(128),
   nameEn: z.string().min(2, 'Minimum 2 characters').max(128),
-  patternType: z.enum(['kente', 'bogolan', 'adinkra', 'ndebele', 'kuba', 'ndop', 'wax']),
+  patternType: z.enum(['kente', 'bogolan', 'adinkra', 'ndebele', 'kuba', 'ndop', 'wax', 'berber']),
   region: z.enum([
     'west-africa',
     'east-africa',
@@ -142,7 +142,7 @@ const QuerySchema = z.object({
       'diaspora',
     ])
     .optional(),
-  patternType: z.enum(['kente', 'bogolan', 'adinkra', 'ndebele', 'kuba', 'ndop', 'wax']).optional(),
+  patternType: z.enum(['kente', 'bogolan', 'adinkra', 'ndebele', 'kuba', 'ndop', 'wax', 'berber']).optional(),
   search: z.string().max(128).optional(),
 });
 
@@ -162,22 +162,26 @@ export class CultureController {
       const where = search
         ? {
             OR: [
-              { nameFr: { contains: search, mode: 'insensitive' as const } },
+              { name: { contains: search, mode: 'insensitive' as const } },
               { nameLocal: { contains: search, mode: 'insensitive' as const } },
             ],
           }
         : {};
 
-      const patterns = await db.pattern.findMany({
-        where,
-        skip,
-        take: perPageNum,
-        orderBy: { createdAt: 'desc' },
-        include: { origin: true, colors: true, symbols: true, artisanQuote: true },
-      });
+      const [patterns, totalItems] = await Promise.all([
+        db.pattern.findMany({
+          where,
+          skip,
+          take: perPageNum,
+          orderBy: { createdAt: 'desc' },
+          include: { origin: true, colors: true, symbols: true, artisanQuote: true },
+        }),
+        db.pattern.count({ where }),
+      ]);
 
-      const response = PatternListResponseMapper.toPatternDocArray(patterns);
-      res.json(response);
+      const data = PatternListResponseMapper.toPatternDocArray(patterns);
+      const totalPages = Math.ceil(totalItems / perPageNum);
+      res.json(ok({ data, meta: { page: pageNum, perPage: perPageNum, totalItems, totalPages } }));
     } catch (err) {
       next(err);
     }
@@ -189,8 +193,23 @@ export class CultureController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const pattern = await this.service.getPatternBySlug(req.params.slug);
-      res.json(ok(pattern.toObject()));
+      const pattern = await db.pattern.findUnique({
+        where: { slug: req.params.slug },
+        include: { origin: true, colors: true, symbols: true, artisanQuote: true },
+      });
+
+      if (!pattern) {
+        return res.status(404).json({ success: false, message: 'Pattern not found', data: null });
+      }
+
+      // Increment views
+      await db.pattern.update({
+        where: { id: pattern.id },
+        data: { views: pattern.views + 1 },
+      });
+
+      const response = PatternListResponseMapper.toPatternDoc(pattern);
+      res.json(ok(response));
     } catch (err) {
       next(err);
     }

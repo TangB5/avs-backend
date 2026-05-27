@@ -30,6 +30,13 @@ export class PrismaCultureRepository implements ICultureRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  async findBySlugRaw(slug: string) {
+    return await this.prisma.pattern.findUnique({
+      where: { slug },
+      include: { origin: true, colors: true, symbols: true, artisanQuote: true },
+    });
+  }
+
   async findMany(opts: FindPatternsOptions): Promise<FindResult<CulturePattern>> {
     const { page = 1, perPage = 20, search } = opts;
     const skip = (page - 1) * perPage;
@@ -79,14 +86,63 @@ export class PrismaCultureRepository implements ICultureRepository {
   }
 
   // ── Mappers Domain ↔ Persistence ─────────────────────────────────────────
-  // NOTE: Ces mappers utilisent l'ancien schéma et ne sont plus utilisés.
-  // La nouvelle API utilise PatternListResponseMapper directement depuis Prisma.
-  private toDomain(row: Prisma.PatternGetPayload<object>): CulturePattern {
-    throw new Error('Repository.toDomain() est obsolète. Utiliser PatternListResponseMapper.');
+  private toDomain(row: any): CulturePattern {
+    // Backward compatibility: This is only called by save/update
+    // Convert Prisma row to CulturePattern domain object
+    return CulturePattern.create({
+      id: row.id,
+      slug: row.slug,
+      nameFr: row.nameFr,
+      nameEn: row.nameEn || row.nameFr,
+      descFr: row.descFr || row.history || '',
+      descEn: row.descEn || row.history || '',
+      patternType: row.type.toLowerCase() as PatternType,
+      region: 'west-africa',
+      country: row.nameLocal?.substring(0, 2).toUpperCase() || 'XX', // Fallback to XX if not available
+      colors: {
+        primary: '#C0573E',
+        secondary: '#F5EBE0',
+      },
+      symbolism: {
+        meaning: row.symbolism || '',
+        keywords: [],
+        usage: 'universal',
+      },
+      isPublished: false,
+      isFeatured: false,
+      viewCount: row.views || 0,
+      svgUrl: undefined,
+      metadata: {},
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      createdById: row.createdById || '',
+    });
   }
 
   private toPersistence(pattern: CulturePattern): Prisma.PatternCreateInput & { id: string } {
-    throw new Error('Repository.toPersistence() est obsolète. À refactoriser.');
+    const props = pattern.toObject();
+    const patternTypeUpper = props.patternType.toUpperCase() as 'KENTE' | 'BOGOLAN' | 'ADINKRA' | 'NDEBELE' | 'KUBA' | 'NDOP' | 'WAX' | 'BERBER';
+    
+    return {
+      id: props.id,
+      slug: props.slug,
+      nameFr: props.nameFr,
+      nameLocal: props.metadata?.nameLocal || 'Unknown',
+      type: patternTypeUpper,
+      cssClass: `avs-pattern-${props.patternType.toLowerCase()}-default`,
+      era: props.metadata?.era,
+      license: props.metadata?.license || 'cc-by',
+      summary: props.metadata?.summary || 'Summary not provided',
+      history: props.metadata?.history || 'History not provided',
+      technique: props.metadata?.technique || 'Technique not provided',
+      symbolism: props.symbolism?.meaning || 'Symbolism not provided',
+      ceremonial: props.metadata?.ceremonial || 'Not specified',
+      sources: props.metadata?.sources || [],
+      downloads: 0,
+      views: props.viewCount || 0,
+      createdAt: props.createdAt,
+      updatedAt: props.updatedAt,
+    };
   }
 }
 

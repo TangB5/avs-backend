@@ -29,16 +29,22 @@ export interface ArtisanQuote {
   country: string;
 }
 
+export interface PatternSymbolism {
+  meaning: string;
+  keywords?: string[];
+  usage: 'ceremonial' | 'daily' | 'royal' | 'spiritual' | 'universal';
+}
+
 export interface PatternDoc {
   id: string;
   slug: string;
-  nameFr: string;
+  name: string;
   nameLocal: string;
+  imgUrl: string;
   type: string;
-  svgPattern?: string;
   cssClass: string;
-  storagePath?: string;
-  svgUrl?: string;
+  status: string;
+  isFeatured: boolean;
   origin: PatternOrigin;
   era: string;
   license: string;
@@ -46,58 +52,60 @@ export interface PatternDoc {
   summary: string;
   history: string;
   technique: string;
-  symbolism: string;
+  symbolism: PatternSymbolism;
   ceremonial: string;
   symbols: PatternSymbol[];
   artisanQuote?: ArtisanQuote;
   sources: string[];
   downloads: number;
   views: number;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function toPatternDoc(domain: any): PatternDoc {
-  const metadata = domain.metadata || {};
-  const colors = metadata.colors || [
-    { hex: domain.colors?.primary || '#C0573E', name: 'Primaire', meaning: 'Couleur principale' },
-    { hex: domain.colors?.secondary || '#F5EBE0', name: 'Secondaire', meaning: 'Couleur secondaire' },
-  ];
-  if (domain.colors?.accent) {
-    colors.push({ hex: domain.colors.accent, name: 'Accent', meaning: 'Couleur d\'accent' });
-  }
-
   return {
     id: domain.id,
     slug: domain.slug,
-    nameFr: domain.nameFr,
-    nameLocal: metadata.nameLocal || domain.nameFr,
-    type: domain.patternType?.toUpperCase() || 'NDOP',
-    svgPattern: metadata.svgPattern,
-    cssClass: `pattern-${domain.patternType?.toLowerCase() || 'ndop'}`,
-    storagePath: metadata.svgFilePath,
-    svgUrl: domain.svgUrl,
+    name: domain.name,
+    nameLocal: domain.nameLocal,
+    imgUrl: domain.imgUrl,
+    type: domain.type,
+    cssClass: domain.cssClass,
+    status: domain.status,
+    isFeatured: domain.isFeatured,
     origin: {
-      people: metadata.people || '',
-      region: domain.region || '',
-      country: domain.country || '',
-      flag: metadata.flag || '',
-      coords: metadata.coords || [0, 0],
+      people: domain.origin?.people || '',
+      region: domain.origin?.region || '',
+      country: domain.origin?.country || '',
+      flag: domain.origin?.flag || '',
+      coords: (domain.origin?.coords as [number, number]) || [0, 0],
     },
-    era: metadata.era || '',
-    license: metadata.license || 'cc-by',
-    colors,
-    summary: metadata.summary || domain.descFr || '',
-    history: metadata.history || '',
-    technique: metadata.technique || '',
-    symbolism: domain.symbolism?.meaning || metadata.symbolism || '',
-    ceremonial: metadata.ceremonial || '',
-    symbols: metadata.symbols || [],
-    artisanQuote: metadata.artisanQuote,
-    sources: metadata.sources || [],
-    downloads: 0, // TODO: implement download count
-    views: domain.viewCount || 0,
-    createdAt: domain.createdAt?.toISOString(),
-    updatedAt: domain.updatedAt?.toISOString(),
+    era: domain.era || '',
+    license: domain.license || 'cc-by',
+    colors: (domain.colors || []) as PatternColor[],
+    summary: domain.summary || '',
+    history: domain.history || '',
+    technique: domain.technique || '',
+    symbolism: {
+      meaning: domain.symbolism || '',
+      keywords: [],
+      usage: 'universal',
+    },
+    ceremonial: domain.ceremonial || '',
+    symbols: (domain.symbols || []) as PatternSymbol[],
+    artisanQuote: domain.artisanQuote
+      ? {
+          text: domain.artisanQuote.text,
+          author: domain.artisanQuote.author,
+          role: domain.artisanQuote.role,
+          country: domain.artisanQuote.country,
+        }
+      : undefined,
+    sources: domain.sources || [],
+    downloads: domain.downloads || 0,
+    views: domain.views || 0,
+    createdAt: domain.createdAt.toISOString(),
+    updatedAt: domain.updatedAt.toISOString(),
   };
 }
