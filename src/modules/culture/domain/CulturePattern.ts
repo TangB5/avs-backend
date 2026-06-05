@@ -67,6 +67,7 @@ export interface CulturePatternProps {
   name:      string | null;
   nameLocal: string;
   imgUrl:    string | null;
+  createdById:string;
 
   // ── Classification ────────────────────────────────
   type:      PatternType;
@@ -122,6 +123,7 @@ export class CulturePattern {
   get name():        string | null   { return this.props.name; }
   get nameLocal():   string          { return this.props.nameLocal; }
   get imgUrl():      string | null   { return this.props.imgUrl; }
+  get createdById(): string          {return this.props.createdById;}
 
   get type():        PatternType     { return this.props.type; }
   get cssClass():    string          { return this.props.cssClass; }

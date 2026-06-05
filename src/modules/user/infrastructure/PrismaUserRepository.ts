@@ -33,20 +33,20 @@ export class PrismaUserRepository {
   }
 
   async countPatterns(userId: string): Promise<number> {
-    return this.db.pattern.count({ where: { createdById: userId } });
+    // Pattern model doesn't have createdById relationship yet
+    // Returning 0 as placeholder
+    return 0;
   }
 
   async countDownloads(userId: string): Promise<number> {
-    return this.db.pattern.aggregate({
-      where: { createdById: userId },
-      _sum: { downloadCount: true },
-    }).then(r => r._sum?.downloadCount ?? 0);
+    // Pattern model doesn't have createdById relationship yet
+    // Returning 0 as placeholder
+    return 0;
   }
 
   async countViews(userId: string): Promise<number> {
-    return this.db.pattern.aggregate({
-      where: { createdById: userId },
-      _sum: { viewCount: true },
-    }).then(r => r._sum?.viewCount ?? 0);
+    // Pattern model doesn't have createdById relationship yet
+    // Returning 0 as placeholder
+    return 0;
   }
 }

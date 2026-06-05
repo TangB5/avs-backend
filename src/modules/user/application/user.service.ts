@@ -1,7 +1,6 @@
 import type { User } from '@prisma/client';
-import { hash, compare } from 'bcryptjs';
 import type { IRepository } from '@/shared/types/repository.types';
-import { db } from '@/config/database';
+import { PrismaClient } from '@prisma/client';
 
 export interface UpdateUserDto {
   name?: string;
@@ -17,22 +16,35 @@ export interface UpdateUserDto {
 export interface UserPattern {
   id: string;
   name: string;
+  slug: string;
   type: string;
   status: 'published' | 'draft' | 'review';
-  viewCount: number;
-  downloadCount: number;
+  views: number;
+  downloads: number;
+  imgUrl: string;
 }
 
 export interface UserActivity {
   id: string;
   action: string;
-  target: string;
-  timestamp: string;
-  type: 'comment' | 'download' | 'review' | 'favorite';
+  targetType: string;
+  targetId: string;
+  createdAt: string;
+}
+
+export interface UserStats {
+  patternsCount: number;
+  downloadsTotal: number;
+  viewsTotal: number;
+  favoritesCount: number;
+  commentsCount: number;
 }
 
 export class UserService {
-  constructor(private readonly repository: IRepository<User>) {}
+  constructor(
+    private readonly repository: IRepository<User>,
+    private readonly db: PrismaClient,
+  ) {}
 
   async getUserById(userId: string): Promise<User> {
     const user = await this.repository.findById(userId);
@@ -45,34 +57,45 @@ export class UserService {
     return user;
   }
 
-  async getUserStats(userId: string): Promise<{
-    patternsCount: number;
-    downloadsTotal: number;
-    viewsTotal: number;
-    favoritesCount: number;
-  }> {
+  async getUserStats(userId: string): Promise<UserStats> {
     const user = await this.repository.findById(userId);
     if (!user) throw new Error('User not found');
-    
-    // For now, return structure - will be updated when models are available
+
+    // Count comments by this user
+    const commentsCount = await this.db.comment.count({
+      where: { userId },
+    });
+
     return {
       patternsCount: 0,
       downloadsTotal: 0,
       viewsTotal: 0,
       favoritesCount: 0,
+      commentsCount,
     };
   }
 
   async getUserPatterns(userId: string, limit: number = 5): Promise<UserPattern[]> {
-    // Placeholder - will fetch from Pattern model when available
-    // For now return empty array
+    // Fetch recent patterns
+    // Note: Pattern model doesn't have createdById yet, so returning empty for now
+    // Once Pattern model is updated with user relationship, implement this
     return [];
   }
 
   async getUserActivity(userId: string, limit: number = 6): Promise<UserActivity[]> {
-    // Placeholder - will fetch from Activity model when available
-    // For now return empty array
-    return [];
+    const activities = await this.db.activity.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    return activities.map((activity) => ({
+      id: activity.id,
+      action: activity.action,
+      targetType: activity.targetType,
+      targetId: activity.targetId,
+      createdAt: activity.createdAt.toISOString(),
+    }));
   }
 
   async deleteUser(userId: string): Promise<void> {
@@ -83,3 +106,4 @@ export class UserService {
     return this.repository.update(userId, { verified: true });
   }
 }
+

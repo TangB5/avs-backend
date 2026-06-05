@@ -27,11 +27,12 @@ export class UserController {
       }
 
       const user = await this.service.getUserById(userId);
+      const { passwordHash, ...safeUser } = user;
 
       // Refresh session cookie (httpOnly) on each /me request
       this.refreshSessionCookie(req, res);
 
-      res.json(ok(user, 'User retrieved'));
+      res.json(ok(safeUser, 'User retrieved'));
     } catch (err) {
       next(err);
     }
@@ -109,7 +110,8 @@ export class UserController {
 
       const data = UpdateSchema.parse(req.body);
       const user = await this.service.updateUser(userId, data);
-      res.json(ok(user, 'User updated'));
+      const { passwordHash, ...safeUser } = user;
+      res.json(ok(safeUser, 'User updated'));
     } catch (err) {
       next(err);
     }

@@ -62,6 +62,7 @@ model Pattern {
   slug          String        @unique
   name          String
   nameLocal     String
+  createdById   String        @default("yannick")
   imgUrl        String
   type          PatternType
   cssClass      String

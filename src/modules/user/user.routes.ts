@@ -9,7 +9,7 @@ const router = Router();
 
 // Dependency Injection
 const repository = new PrismaUserRepository(db);
-const service = new UserService(repository as any);
+const service = new UserService(repository as any, db);
 const controller = new UserController(service);
 
 /**
