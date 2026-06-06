@@ -17,25 +17,14 @@ declare module 'express-serve-static-core' {
 
 /**
  * Middleware d'authentification
- * Support deux sources de token:
- * 1. Cookie httpOnly: avs_session (préféré, plus sécurisé)
- * 2. Header Authorization: Bearer <token> (fallback pour API clients)
+ * Lit le token depuis le cookie HttpOnly: avs_access
  */
 export const authenticate: RequestHandler = (req, _res, next) => {
   try {
-    // 1. Essayer le token depuis le cookie httpOnly (priorité)
-    let token = req.cookies?.avs_session;
-
-    // 2. Fallback: token depuis Authorization header
-    if (!token) {
-      const authHeader = req.headers.authorization;
-      if (authHeader?.startsWith('Bearer ')) {
-        token = authHeader.slice(7);
-      }
-    }
+    const token = req.cookies?.avs_access;
 
     if (!token) {
-      throw new UnauthorizedError('Token manquant ou format invalide');
+      throw new UnauthorizedError('Token manquant');
     }
 
     const secret = process.env.JWT_SECRET;
