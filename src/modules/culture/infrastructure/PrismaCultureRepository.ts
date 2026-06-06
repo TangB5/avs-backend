@@ -9,7 +9,7 @@
 
 import type { PrismaClient, Prisma } from '@prisma/client';
 import type { ICultureRepository, FindPatternsOptions, FindResult } from '../domain/ICultureRepository';
-import { CulturePattern, type PatternType, type Region, type UsageType } from '../domain/CulturePattern';
+import { CulturePattern, type PatternType } from '../domain/CulturePattern';
 
 export class PrismaCultureRepository implements ICultureRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -44,7 +44,7 @@ export class PrismaCultureRepository implements ICultureRepository {
     const where: Prisma.PatternWhereInput = {
       ...(search && {
         OR: [
-          { nameFr: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: 'insensitive' } },
           { nameLocal: { contains: search, mode: 'insensitive' } },
         ],
       }),
@@ -87,59 +87,60 @@ export class PrismaCultureRepository implements ICultureRepository {
 
   // ── Mappers Domain ↔ Persistence ─────────────────────────────────────────
   private toDomain(row: any): CulturePattern {
-    // Backward compatibility: This is only called by save/update
-    // Convert Prisma row to CulturePattern domain object
     return CulturePattern.create({
       id: row.id,
       slug: row.slug,
-      nameFr: row.nameFr,
-      nameEn: row.nameEn || row.nameFr,
-      descFr: row.descFr || row.history || '',
-      descEn: row.descEn || row.history || '',
-      patternType: row.type.toLowerCase() as PatternType,
-      region: 'west-africa',
-      country: row.nameLocal?.substring(0, 2).toUpperCase() || 'XX', // Fallback to XX if not available
-      colors: {
-        primary: '#C0573E',
-        secondary: '#F5EBE0',
-      },
-      symbolism: {
-        meaning: row.symbolism || '',
-        keywords: [],
-        usage: 'universal',
-      },
-      isPublished: false,
-      isFeatured: false,
-      viewCount: row.views || 0,
-      svgUrl: undefined,
-      metadata: {},
+      name: row.name,
+      nameLocal: row.nameLocal,
+      imgUrl: row.imgUrl,
+      type: row.type as PatternType,
+      cssClass: row.cssClass,
+      era: row.era,
+      license: row.license,
+      summary: row.summary,
+      history: row.history,
+      technique: row.technique,
+      symbolism: row.symbolism,
+      ceremonial: row.ceremonial,
+      sources: row.sources || [],
+      downloads: row.downloads || 0,
+      views: row.views || 0,
+      status: row.status,
+      isFeatured: row.isFeatured || false,
+      origin: row.origin || undefined,
+      colors: row.colors || undefined,
+      symbols: row.symbols || undefined,
+      artisanQuote: row.artisanQuote || undefined,
+      createdById: row.createdById,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
-      createdById: row.createdById || '',
     });
   }
 
   private toPersistence(pattern: CulturePattern): Prisma.PatternCreateInput & { id: string } {
     const props = pattern.toObject();
-    const patternTypeUpper = props.patternType.toUpperCase() as 'KENTE' | 'BOGOLAN' | 'ADINKRA' | 'NDEBELE' | 'KUBA' | 'NDOP' | 'WAX' | 'BERBER';
     
     return {
       id: props.id,
       slug: props.slug,
-      nameFr: props.nameFr,
-      nameLocal: props.metadata?.nameLocal || 'Unknown',
-      type: patternTypeUpper,
-      cssClass: `avs-pattern-${props.patternType.toLowerCase()}-default`,
-      era: props.metadata?.era,
-      license: props.metadata?.license || 'cc-by',
-      summary: props.metadata?.summary || 'Summary not provided',
-      history: props.metadata?.history || 'History not provided',
-      technique: props.metadata?.technique || 'Technique not provided',
-      symbolism: props.symbolism?.meaning || 'Symbolism not provided',
-      ceremonial: props.metadata?.ceremonial || 'Not specified',
-      sources: props.metadata?.sources || [],
-      downloads: 0,
-      views: props.viewCount || 0,
+      name: props.name || '',
+      nameLocal: props.nameLocal || 'Unknown',
+      imgUrl: props.imgUrl || '',
+      type: props.type,
+      cssClass: props.cssClass,
+      era: props.era,
+      license: props.license,
+      summary: props.summary,
+      history: props.history,
+      technique: props.technique,
+      symbolism: props.symbolism,
+      ceremonial: props.ceremonial,
+      sources: props.sources,
+      downloads: props.downloads,
+      views: props.views,
+      status: props.status,
+      isFeatured: props.isFeatured,
+      createdById: props.createdById,
       createdAt: props.createdAt,
       updatedAt: props.updatedAt,
     };

@@ -4,7 +4,8 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
-import { CultureService } from '@/modules/culture/application/culture.service';
+import { CultureService, UpdatePatternDto } from '@/modules/culture/application/culture.service';
+import type { PatternType } from '@/modules/culture/domain/CulturePattern';
 import { ok } from '@/shared/types/api.types';
 import { StatusCodes } from 'http-status-codes';
 import { logger } from '@/shared/utils/logger';
@@ -93,7 +94,7 @@ const CreateSchema = z.object({
   nameFr: z.string().min(2, 'Minimum 2 characters').max(128),
   nameLocal: z.string().min(2, 'Minimum 2 characters').max(128),
   nameEn: z.string().min(2, 'Minimum 2 characters').max(128),
-  patternType: z.enum(['kente', 'bogolan', 'adinkra', 'ndebele', 'kuba', 'ndop', 'wax', 'berber']),
+  patternType: z.enum(['kente', 'bogolan', 'adinkra', 'ndebele', 'kuba', 'ndop', 'wax', 'berber']).transform(val => val.toUpperCase() as PatternType),
   region: z.enum([
     'west-africa',
     'east-africa',
@@ -199,7 +200,8 @@ export class CultureController {
       });
 
       if (!pattern) {
-        return res.status(404).json({ success: false, message: 'Pattern not found', data: null });
+        res.status(404).json({ success: false, message: 'Pattern not found', data: null });
+        return;
       }
 
       // Increment views
@@ -303,48 +305,24 @@ export class CultureController {
 
       // Transform comprehensive form data to match existing service DTO
       const serviceDto = {
-        nameFr: validatedData.nameFr,
-        nameEn: validatedData.nameEn,
-        descFr: validatedData.descFr,
-        descEn: validatedData.descEn,
-        patternType: validatedData.patternType,
-        region: validatedData.region,
-        country: validatedData.country,
-        colors: {
-          primary: validatedData.colors[0]?.hex || '#C0573E',
-          secondary: validatedData.colors[1]?.hex || '#F5EBE0',
-          accent: validatedData.colors[2]?.hex,
-        },
-        symbolism: {
-          meaning: validatedData.symbolMeaning,
-          keywords: validatedData.symbolKeywords,
-          usage: validatedData.symbolUsage,
-        },
-        // Additional fields from comprehensive form (stored as metadata)
-        metadata: {
-          nameLocal: validatedData.nameLocal,
-          people: validatedData.people,
-          flag: validatedData.flag,
-          coords: validatedData.coords,
-          kingdom: validatedData.kingdom,
-          era: validatedData.era,
-          license: validatedData.license,
-          summary: validatedData.summary,
-          history: validatedData.history,
-          technique: validatedData.technique,
-          ceremonial: validatedData.ceremonial,
-          colors: validatedData.colors, // Full color objects with names/meanings
-          svgPattern: validatedData.svgPattern,
-          artisanQuote: validatedData.artisanQuote,
-          sources: validatedData.sources,
-          symbols: validatedData.symbols,
-          svgFilePath: formData.svgFilePath,
-        },
+        name: validatedData.nameEn,
+        nameLocal: validatedData.nameLocal,
+        imgUrl: formData.svgFilePath || '',
+        type: validatedData.patternType.toUpperCase() as any,
+        cssClass: `pattern-${validatedData.patternType}`,
+        era: validatedData.era,
+        license: validatedData.license,
+        summary: validatedData.summary,
+        history: validatedData.history,
+        technique: validatedData.technique,
+        symbolism: validatedData.symbolMeaning,
+        ceremonial: validatedData.ceremonial,
+        sources: validatedData.sources,
         createdById: req.user!.userId,
       };
 
       const result = await this.service.createPattern(serviceDto);
-      logger.info(`Pattern created: ${result.id} - ${result.nameFr}`);
+      logger.info(`Pattern created: ${result.id} - ${result.name}`);
 
       res
         .status(StatusCodes.CREATED)
@@ -463,70 +441,28 @@ export class CultureController {
       const validatedData = UpdateSchema.parse(formData);
 
       // Transform comprehensive form data to match existing service DTO
-      const serviceDto: any = {};
+      const serviceDto: UpdatePatternDto = {};
 
       // Map basic fields if provided
-      if (validatedData.nameFr) serviceDto.nameFr = validatedData.nameFr;
-      if (validatedData.nameEn) serviceDto.nameEn = validatedData.nameEn;
-      if (validatedData.descFr) serviceDto.descFr = validatedData.descFr;
-      if (validatedData.descEn) serviceDto.descEn = validatedData.descEn;
-      if (validatedData.patternType) serviceDto.patternType = validatedData.patternType;
-      if (validatedData.region) serviceDto.region = validatedData.region;
-      if (validatedData.country) serviceDto.country = validatedData.country;
-
-      // Map colors if provided
-      if (validatedData.colors) {
-        serviceDto.colors = {
-          primary: validatedData.colors[0]?.hex,
-          secondary: validatedData.colors[1]?.hex,
-          accent: validatedData.colors[2]?.hex,
-        };
-      }
-
-      // Map symbolism if provided
-      if (
-        validatedData.symbolMeaning ||
-        validatedData.symbolKeywords ||
-        validatedData.symbolUsage
-      ) {
-        serviceDto.symbolism = {};
-        if (validatedData.symbolMeaning) serviceDto.symbolism.meaning = validatedData.symbolMeaning;
-        if (validatedData.symbolKeywords)
-          serviceDto.symbolism.keywords = validatedData.symbolKeywords;
-        if (validatedData.symbolUsage) serviceDto.symbolism.usage = validatedData.symbolUsage;
-      }
-
-      // Additional fields from comprehensive form (stored as metadata)
-      const metadata: any = {};
-      if (validatedData.nameLocal) metadata.nameLocal = validatedData.nameLocal;
-      if (validatedData.people) metadata.people = validatedData.people;
-      if (validatedData.flag) metadata.flag = validatedData.flag;
-      if (validatedData.coords) metadata.coords = validatedData.coords;
-      if (validatedData.kingdom) metadata.kingdom = validatedData.kingdom;
-      if (validatedData.era) metadata.era = validatedData.era;
-      if (validatedData.license) metadata.license = validatedData.license;
-      if (validatedData.summary) metadata.summary = validatedData.summary;
-      if (validatedData.history) metadata.history = validatedData.history;
-      if (validatedData.technique) metadata.technique = validatedData.technique;
-      if (validatedData.ceremonial) metadata.ceremonial = validatedData.ceremonial;
-      if (validatedData.colors) metadata.colors = validatedData.colors;
-      if (validatedData.svgPattern) metadata.svgPattern = validatedData.svgPattern;
-      if (validatedData.artisanQuote) metadata.artisanQuote = validatedData.artisanQuote;
-      if (validatedData.sources) metadata.sources = validatedData.sources;
-      if (validatedData.symbols) metadata.symbols = validatedData.symbols;
-      if (formData.svgFilePath) metadata.svgFilePath = formData.svgFilePath;
-
-      if (Object.keys(metadata).length > 0) {
-        serviceDto.metadata = metadata;
-      }
+      if (validatedData.nameEn) serviceDto.name = validatedData.nameEn;
+      if (validatedData.nameLocal) serviceDto.nameLocal = validatedData.nameLocal;
+      if (validatedData.patternType) serviceDto.type = validatedData.patternType;
+      if (validatedData.era) serviceDto.era = validatedData.era;
+      if (validatedData.license) serviceDto.license = validatedData.license;
+      if (validatedData.summary) serviceDto.summary = validatedData.summary;
+      if (validatedData.history) serviceDto.history = validatedData.history;
+      if (validatedData.technique) serviceDto.technique = validatedData.technique;
+      if (validatedData.symbolMeaning) serviceDto.symbolism = validatedData.symbolMeaning;
+      if (validatedData.ceremonial) serviceDto.ceremonial = validatedData.ceremonial;
+      if (validatedData.sources) serviceDto.sources = validatedData.sources;
+      if (formData.svgFilePath) serviceDto.imgUrl = formData.svgFilePath;
 
       const result = await this.service.updatePattern(
         req.params.id,
         serviceDto,
-        req.user!.userId,
         req.user!.role,
       );
-      logger.info(`Pattern updated: ${result.id} - ${result.nameFr}`);
+      logger.info(`Pattern updated: ${result.id} - ${result.name}`);
 
       res.json(ok(result.toObject(), 'Pattern updated successfully'));
     } catch (err) {
@@ -554,7 +490,6 @@ export class CultureController {
     try {
       const pattern = await this.service.publishPattern(
         req.params.id,
-        req.user!.userId,
         req.user!.role,
       );
       res.json(ok(pattern.toObject(), 'Motif publié'));

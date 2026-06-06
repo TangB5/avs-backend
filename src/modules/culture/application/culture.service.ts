@@ -18,19 +18,20 @@ import { buildMeta, parsePagination } from '@/shared/utils/pagination';
 // ── DTOs (Data Transfer Objects) ──────────────────────────────────────────────
 
 export interface CreatePatternDto {
-  name:       string | null;
+  name:       string;
   nameLocal:  string;
-  imgUrl?:    string | null;
+  imgUrl:     string;
   type:       PatternType;
   cssClass:   string;
-  era?:       string | null;
-  license?:   string | null;
+  era?:       string;
+  license?:   string;
   summary:    string;
   history:    string;
   technique:  string;
   symbolism:  string;
   ceremonial: string;
   sources?:   string[];
+  createdById?: string;
 }
 
 export interface UpdatePatternDto extends Partial<CreatePatternDto> {}
@@ -97,8 +98,9 @@ export class CultureService {
       sources:     dto.sources ?? [],
       downloads:   0,
       views:       0,
-      isPublished: false,
+      status:      'DRAFT',
       isFeatured:  false,
+      createdById: dto.createdById ?? 'system',
       createdAt:   new Date(),
       updatedAt:   new Date(),
     });
@@ -175,3 +177,4 @@ export class CultureService {
       .slice(0, 64);
   }
 }
+
