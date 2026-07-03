@@ -79,7 +79,7 @@ export interface CulturePatternProps {
   summary:    string;
   history:    string;
   technique:  string;
-  symbolism:  string;
+  symbolism:  Symbolism;
   ceremonial: string;
   sources:    string[];
 
@@ -101,6 +101,12 @@ export interface CulturePatternProps {
   // ── Timestamps ────────────────────────────────────
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface Symbolism{
+  meaning: string;
+  keywords: string[];
+  usage: string
 }
 
 // ── Entité domaine ─────────────────────────────────────────────────────────────
@@ -133,7 +139,7 @@ export class CulturePattern {
   get summary():     string          { return this.props.summary; }
   get history():     string          { return this.props.history; }
   get technique():   string          { return this.props.technique; }
-  get symbolism():   string          { return this.props.symbolism; }
+  get symbolism():   Symbolism          { return this.props.symbolism; }
   get ceremonial():  string          { return this.props.ceremonial; }
   get sources():     string[]        { return [...this.props.sources]; }
 

@@ -9,7 +9,7 @@
 // =============================================================================
 
 import { randomUUID } from 'crypto';
-import { CulturePattern, type CulturePatternProps, type PatternType } from '../domain/CulturePattern';
+import { CulturePattern, Symbolism, type CulturePatternProps, type PatternType } from '../domain/CulturePattern';
 import type { ICultureRepository, FindPatternsOptions } from '../domain/ICultureRepository';
 import type { PaginationMeta } from '@/shared/types/api.types';
 import { NotFoundError, ConflictError, ForbiddenError } from '@/shared/errors/AppError';
@@ -28,10 +28,16 @@ export interface CreatePatternDto {
   summary:    string;
   history:    string;
   technique:  string;
-  symbolism:  string;
+  symbolism:  Symbolism;
   ceremonial: string;
   sources?:   string[];
   createdById?: string;
+  colors?:    any[];
+  symbols?:   any[];
+  origin?:    any;
+  artisanQuote?: any;
+  symbolUsage?: string;
+  svgPattern?: string;
 }
 
 export interface UpdatePatternDto extends Partial<CreatePatternDto> {}
@@ -103,6 +109,10 @@ export class CultureService {
       createdById: dto.createdById ?? 'system',
       createdAt:   new Date(),
       updatedAt:   new Date(),
+      origin:      dto.origin,
+      colors:      dto.colors,
+      symbols:     dto.symbols,
+      artisanQuote: dto.artisanQuote,
     });
 
     return this.repository.save(pattern);

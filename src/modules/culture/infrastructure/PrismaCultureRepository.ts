@@ -120,7 +120,7 @@ export class PrismaCultureRepository implements ICultureRepository {
   private toPersistence(pattern: CulturePattern): Prisma.PatternCreateInput & { id: string } {
     const props = pattern.toObject();
     
-    return {
+    const data: any = {
       id: props.id,
       slug: props.slug,
       name: props.name || '',
@@ -140,10 +140,66 @@ export class PrismaCultureRepository implements ICultureRepository {
       views: props.views,
       status: props.status,
       isFeatured: props.isFeatured,
-      createdById: props.createdById,
       createdAt: props.createdAt,
       updatedAt: props.updatedAt,
     };
+
+    // Lier le creator si createdById exists
+    if (props.createdById) {
+      data.creator = { connect: { id: props.createdById } };
+    }
+
+    // Créer les relations si présentes
+    if (props.origin) {
+      data.origin = {
+        create: {
+          id: `${props.id}_origin`,
+          people: props.origin.people,
+          region: props.origin.region,
+          country: props.origin.country,
+          flag: props.origin.flag,
+          coords: props.origin.coords,
+        },
+      };
+    }
+
+    if (props.colors && props.colors.length > 0) {
+      data.colors = {
+        create: props.colors.map((color: any) => ({
+          hex: color.hex,
+          name: color.name,
+          meaning: color.meaning,
+        })),
+      };
+    }
+
+    if (props.symbols && props.symbols.length > 0) {
+      data.symbols = {
+        create: props.symbols.map((symbol: any) => ({
+          name: symbol.name,
+          nameFr: symbol.nameFr,
+          cssPreview: symbol.cssPreview,
+          imageUrl: symbol.imageUrl || '',
+          meaning: symbol.meaning,
+          usage: symbol.usage,
+          sacred: symbol.sacred,
+        })),
+      };
+    }
+
+    if (props.artisanQuote) {
+      data.artisanQuote = {
+        create: {
+          id: `${props.id}_quote`,
+          text: props.artisanQuote.text,
+          author: props.artisanQuote.author,
+          role: props.artisanQuote.role,
+          country: props.artisanQuote.country,
+        },
+      };
+    }
+
+    return data;
   }
 }
 

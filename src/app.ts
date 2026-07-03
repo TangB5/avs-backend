@@ -29,7 +29,6 @@ import paletteRoutes from '@/modules/palette/palette.routes';
 // ── Community & Interaction ───────────────────────────────────────────────
 import commentRoutes from '@/modules/comment/comment.routes';
 import activityRoutes from '@/modules/activity/activity.routes';
-import 'dotenv/config'
 
 const app = express();
 const API_VERSION = process.env.API_VERSION ?? 'v1';

@@ -13,6 +13,7 @@ export class PatternListResponseMapper {
         origin: true;
         colors: true;
         symbols: true;
+        symbolism:true;
         artisanQuote: true;
       };
     }>,
@@ -41,10 +42,10 @@ export class PatternListResponseMapper {
       history: pattern.history,
       technique: pattern.technique,
       symbolism: {
-        meaning: pattern.symbolism ?? '',
-        keywords: [],
-        usage: 'universal',
-      } as PatternSymbolism,
+        meaning:pattern.symbolism?.meaning ?? "",
+        keywords:pattern.symbolism?.keywords ,
+        usage:pattern.symbolism?.usage ?? ""
+      },
       ceremonial: pattern.ceremonial,
       symbols: (pattern.symbols as unknown as PatternSymbol[]) ?? [],
       artisanQuote: pattern.artisanQuote
@@ -69,6 +70,7 @@ export class PatternListResponseMapper {
         origin: true;
         colors: true;
         symbols: true;
+        symbolism:true;
         artisanQuote: true;
       };
     }>[],

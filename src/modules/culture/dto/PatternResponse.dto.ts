@@ -32,7 +32,7 @@ export interface ArtisanQuote {
 export interface PatternSymbolism {
   meaning: string;
   keywords?: string[];
-  usage: 'ceremonial' | 'daily' | 'royal' | 'spiritual' | 'universal';
+  usage: string;
 }
 
 export interface PatternDoc {
@@ -87,11 +87,7 @@ export function toPatternDoc(domain: any): PatternDoc {
     summary: domain.summary || '',
     history: domain.history || '',
     technique: domain.technique || '',
-    symbolism: {
-      meaning: domain.symbolism || '',
-      keywords: [],
-      usage: 'universal',
-    },
+    symbolism: domain.symbolism,
     ceremonial: domain.ceremonial || '',
     symbols: (domain.symbols || []) as PatternSymbol[],
     artisanQuote: domain.artisanQuote

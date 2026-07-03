@@ -89,9 +89,13 @@ const SymbolSchema = z.object({
   imageUrl: z.string().url('Invalid image URL').optional(),
 });
 
+const SymbolisimSchema =z.object({
+  meaning: z.string().min(10,"symbolism meaning is requierd").max(512),
+  keywords:z.array(z.string().min(1)).min(1,"at least one keyword is requierd").max(10),
+  usage: z.enum(['ceremonial', 'daily', 'royal', 'spiritual', 'universal'])
+})
 const CreateSchema = z.object({
   // Step 1: Identity
-  nameFr: z.string().min(2, 'Minimum 2 characters').max(128),
   nameLocal: z.string().min(2, 'Minimum 2 characters').max(128),
   nameEn: z.string().min(2, 'Minimum 2 characters').max(128),
   patternType: z.enum(['kente', 'bogolan', 'adinkra', 'ndebele', 'kuba', 'ndop', 'wax', 'berber']).transform(val => val.toUpperCase() as PatternType),
@@ -113,14 +117,10 @@ const CreateSchema = z.object({
 
   // Step 2: Description
   summary: z.string().min(10, 'Summary must be at least 10 characters').max(500),
-  descFr: z.string().min(20, 'French description must be at least 20 characters').max(2000),
-  descEn: z.string().min(20, 'English description must be at least 20 characters').max(2000),
   history: z.string().min(10, 'History must be at least 10 characters').max(2000),
   technique: z.string().min(10, 'Technique must be at least 10 characters').max(1000),
-  symbolMeaning: z.string().min(10, 'Symbol meaning must be at least 10 characters').max(512),
   ceremonial: z.string().min(10, 'Ceremonial usage must be at least 10 characters').max(1000),
-  symbolUsage: z.enum(['ceremonial', 'daily', 'royal', 'spiritual', 'universal']),
-  symbolKeywords: z.array(z.string().min(1)).min(1, 'At least one keyword required').max(10),
+  
 
   // Step 3: Colors & Assets
   colors: z.array(ColorSchema).min(2, 'At least 2 colors required').max(5),
@@ -128,6 +128,7 @@ const CreateSchema = z.object({
   artisanQuote: ArtisanQuoteSchema,
   sources: z.array(z.string().min(1)).min(1, 'At least one source required').max(10),
   symbols: z.array(SymbolSchema).min(1, 'At least one symbol required').max(20),
+  symbolism:SymbolisimSchema
 });
 
 const QuerySchema = z.object({
@@ -175,7 +176,7 @@ export class CultureController {
           skip,
           take: perPageNum,
           orderBy: { createdAt: 'desc' },
-          include: { origin: true, colors: true, symbols: true, artisanQuote: true },
+          include: { origin: true, colors: true, symbols: true, artisanQuote: true ,symbolism:true},
         }),
         db.pattern.count({ where }),
       ]);
@@ -196,7 +197,7 @@ export class CultureController {
     try {
       const pattern = await db.pattern.findUnique({
         where: { slug: req.params.slug },
-        include: { origin: true, colors: true, symbols: true, artisanQuote: true },
+        include: { origin: true, colors: true, symbols: true, artisanQuote: true ,symbolism:true},
       });
 
       if (!pattern) {
@@ -219,10 +220,10 @@ export class CultureController {
 
   create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      // Handle FormData parsing
+      
       const formData: any = {};
 
-      // Parse all form fields
+      
       for (const [key, value] of Object.entries(req.body)) {
         if (value === undefined || value === null) continue;
 
@@ -315,10 +316,21 @@ export class CultureController {
         summary: validatedData.summary,
         history: validatedData.history,
         technique: validatedData.technique,
-        symbolism: validatedData.symbolMeaning,
+        symbolism: validatedData.symbolism,
         ceremonial: validatedData.ceremonial,
         sources: validatedData.sources,
         createdById: req.user!.userId,
+        colors: validatedData.colors,
+        symbols: validatedData.symbols,
+        origin: validatedData.region && validatedData.country ? {
+          people: validatedData.people || '',
+          region: validatedData.region,
+          country: validatedData.country,
+          flag: validatedData.flag || '',
+          coords: validatedData.coords || [0, 0],
+        } : undefined,
+        artisanQuote: validatedData.artisanQuote,
+        svgPattern: validatedData.svgPattern,
       };
 
       const result = await this.service.createPattern(serviceDto);
@@ -452,7 +464,7 @@ export class CultureController {
       if (validatedData.summary) serviceDto.summary = validatedData.summary;
       if (validatedData.history) serviceDto.history = validatedData.history;
       if (validatedData.technique) serviceDto.technique = validatedData.technique;
-      if (validatedData.symbolMeaning) serviceDto.symbolism = validatedData.symbolMeaning;
+      if (validatedData.symbolism) serviceDto.symbolism = validatedData.symbolism;
       if (validatedData.ceremonial) serviceDto.ceremonial = validatedData.ceremonial;
       if (validatedData.sources) serviceDto.sources = validatedData.sources;
       if (formData.svgFilePath) serviceDto.imgUrl = formData.svgFilePath;

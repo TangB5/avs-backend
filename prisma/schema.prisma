@@ -52,8 +52,10 @@ model User {
   accounts      Account[]
   sessions      Session[]
   artisan       Artisan?
+  patterns      Pattern[]
   comments      Comment[]
   activities    Activity[]
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -62,7 +64,8 @@ model Pattern {
   slug          String        @unique
   name          String
   nameLocal     String
-  createdById   String        @default("yannick")
+  createdById   String
+  creator       User?         @relation(fields: [createdById], references: [id])
   imgUrl        String
   type          PatternType
   cssClass      String
@@ -71,12 +74,12 @@ model Pattern {
   summary       String        @db.Text
   history       String        @db.Text
   technique     String        @db.Text
-  symbolism     String        @db.Text
+  symbolism     Symbolism?     
   ceremonial    String        @db.Text
   sources       String[]
   downloads     Int           @default(0)
   views         Int           @default(0)
-  status        Status       @default(DRAFT)
+  status        Status        @default(DRAFT)
   isFeatured    Boolean       @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -87,6 +90,9 @@ model Pattern {
   comments      Comment[]
   @@index([slug])
   @@index([type])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([createdById])
   @@map("patterns")
 }
 
@@ -126,6 +132,16 @@ model Symbol {
   @@map("symbols")
 }
 
+model Symbolism{
+  id       String   @id @default(cuid())
+  meaning  String
+  keywords String[]
+  usage    String
+  patternId String   @unique
+  pattern   Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  @@map("symbolism")
+
+}
 model ArtisanQuote {
   id        String   @id @default(cuid())
   text      String   @db.Text
@@ -300,5 +316,6 @@ model Activity {
   createdAt  DateTime      @default(now())
   @@index([userId])
   @@index([createdAt])
+  @@index([targetId])
   @@map("activities")
 }

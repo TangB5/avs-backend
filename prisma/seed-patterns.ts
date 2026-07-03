@@ -1,10 +1,37 @@
-import { PrismaClient, PatternType } from '@prisma/client';
+import { PrismaClient, PatternType,Status } from '@prisma/client';
+import bcrypt from "bcryptjs";
+
+
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding patterns...');
 
+  console.log("👤 Création utilisateur...");
+
+console.log("👤 Création / vérification de l'utilisateur...");
+
+const hashedPassword = await bcrypt.hash("Mydad45#", 10);
+
+const user = await prisma.user.upsert({
+  where: {
+    email: "admin@avs.com",
+  },
+  update: {},
+  create: {
+    email: "admin@avs.com",
+    name: "Admin AVS",
+    role: "ADMIN",
+    verified: true,
+    bio: "Utilisateur seed principal",
+    location: "Cameroon",
+    specialty: "Textile culture",
+    passwordHash: hashedPassword,
+  },
+});
+
+console.log("✅ User prêt :", user.id);
   const patterns = [
     {
       slug: 'kente-ashanti',
@@ -18,11 +45,25 @@ async function main() {
       summary: 'Le Kente est un tissu traditionnel du peuple Ashanti du Ghana, reconnaissable à ses bandes colorées entrelacées.',
       history: 'Originaire du royaume Ashanti au Ghana, le Kente fut d\'abord réservé à la royauté. Sa création remonte au 17ème siècle selon la tradition orale.',
       technique: 'Tissage à la main sur métier à bandes étroites. Chaque bande est tissée séparément puis assemblée.',
-      symbolism: 'Chaque couleur et motif a une signification précise : l\'or représente la richesse, le vert la croissance, le rouge le sacrifice.',
       ceremonial: 'Porté lors des cérémonies importantes : mariages, funérailles royales, fêtes nationales.',
       sources: ['https://en.wikipedia.org/wiki/Kente_cloth', 'https://www.metmuseum.org/art/collection/search/317870'],
-      isPublished: true,
+      status: Status.PUBLISHED,
       isFeatured: true,
+      symbolism: {
+  create: {
+    meaning:
+      "Chaque couleur et motif a une signification précise : l'or représente la richesse, le vert la croissance, le rouge le sacrifice.",
+    keywords: [
+      "royauté",
+      "richesse",
+      "croissance",
+      "sacrifice",
+      "tradition",
+    ],
+    usage:
+      "Les motifs servent à transmettre des valeurs culturelles, l'histoire et le statut social.",
+  },
+},
       origin: {
         create: {
           people: 'Ashanti',
@@ -75,10 +116,16 @@ async function main() {
       summary: 'Le Bogolan est un tissu teint à la boue fabriqué par les peuples Bamana du Mali, avec des motifs géométriques symboliques.',
       history: 'Originaire du Mali, le Bogolan (littéralement "fait de boue" en Bambara) est une technique ancestrale transmise de génération en génération.',
       technique: 'Le tissu de coton est d\'abord trempé dans une infusion de feuilles, puis des motifs sont peints avec de la boue fermentée riche en fer.',
-      symbolism: 'Les motifs géométriques encodent des messages et des histoires. Chaque symbole est lié à des événements historiques ou des proverbes.',
+      symbolism: {
+        create: {
+          meaning: 'Les motifs géométriques encodent des messages et des histoires. Chaque symbole est lié à des événements historiques ou des proverbes.',
+          keywords: ['géométrie', 'messages', 'histoires', 'événements', 'proverbes'],
+          usage: 'Les motifs servent à transmettre des valeurs culturelles, l\'histoire et le statut social.',
+        },
+      },
       ceremonial: 'Traditionnellement porté par les femmes après l\'excision, puis par les chasseurs pour se protéger des esprits.',
       sources: ['https://en.wikipedia.org/wiki/Bogolanfini', 'https://africanstudies.org/bogolan'],
-      isPublished: true,
+      status: Status.PUBLISHED,
       isFeatured: false,
       origin: {
         create: {
@@ -131,10 +178,16 @@ async function main() {
       summary: 'Les symboles Adinkra sont des pictogrammes visuels du peuple Akan du Ghana, représentant des concepts, aphorismes et proverbes.',
       history: 'Originaires du peuple Akan du Ghana et de Côte d\'Ivoire, les symboles Adinkra furent d\'abord utilisés par les rois Ashanti.',
       technique: 'Les symboles sont découpés dans des calebasses ou gravés dans du bois, puis trempés dans une teinture naturelle noire pour imprimer le tissu.',
-      symbolism: 'Plus de 100 symboles existent, chacun portant une signification philosophique, morale ou spirituelle profonde.',
+      symbolism: {
+        create: {
+          meaning: 'Plus de 100 symboles existent, chacun portant une signification philosophique, morale ou spirituelle profonde.',
+          keywords: ['philosophie', 'morale', 'spiritualité'],
+          usage: 'Les motifs servent à transmettre des valeurs culturelles, l\'histoire et le statut social.',
+        },
+      },
       ceremonial: 'Traditionnellement portés lors des funérailles (Adinkra noir), puis adoptés pour toutes les célébrations.',
       sources: ['https://en.wikipedia.org/wiki/Adinkra_symbols', 'https://adinkra.org'],
-      isPublished: true,
+      status: Status.PUBLISHED,
       isFeatured: true,
       origin: {
         create: {
@@ -176,30 +229,47 @@ async function main() {
     },
   ];
 
-  for (const patternData of patterns) {
-    // Vérifie si le pattern existe déjà
-    const existing = await prisma.pattern.findUnique({
+
+if (!user) {
+  console.log(
+    "❌ Aucun utilisateur trouvé. Veuillez créer un utilisateur avant de lancer le seed."
+  );
+  return;
+}
+
+for (const patternData of patterns) {
+  // Vérifie si le pattern existe déjà
+  const existing = await prisma.pattern.findUnique({
+    where: { slug: patternData.slug },
+  });
+
+  if (existing) {
+    await prisma.pattern.update({
       where: { slug: patternData.slug },
+      data: {
+        name: existing.name ?? patternData.name,
+        imgUrl: existing.imgUrl ?? patternData.imgUrl,
+      },
     });
 
-    if (existing) {
-      // Met à jour uniquement name et imgUrl si manquants
-      await prisma.pattern.update({
-        where: { slug: patternData.slug },
-        data: {
-          name: existing.name ?? patternData.name,
-          imgUrl: existing.imgUrl ?? patternData.imgUrl,
-        },
-      });
-      console.log(`✏️  Mis à jour : ${patternData.slug}`);
-    } else {
-      // Crée le pattern complet
-      await prisma.pattern.create({ data: patternData });
-      console.log(`✅ Créé : ${patternData.slug}`);
-    }
-  }
+    console.log(`✏️ Mis à jour : ${patternData.slug}`);
+  } else {
+    await prisma.pattern.create({
+  data: {
+    ...patternData,
+    creator: {
+      connect: {
+        id: user.id,
+      },
+    },
+  },
+});
 
-  console.log('🎉 Seed terminé !');
+    console.log(`✅ Créé : ${patternData.slug}`);
+  }
+}
+
+console.log("🎉 Seed terminé !");
 }
 
 main()
