@@ -74,7 +74,7 @@ export class PrismaCultureRepository implements ICultureRepository {
     const props = pattern.toObject();
     
     const data: any = {
-      slug: props.slug,
+      // Ne pas mettre à jour le slug pour éviter les conflits
       name: props.name || '',
       nameLocal: props.nameLocal || 'Unknown',
       imgUrl: props.imgUrl || '',

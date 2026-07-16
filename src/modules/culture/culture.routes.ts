@@ -583,8 +583,6 @@ router.patch('/:id', authenticate, authRateLimiter, uploadSvg.fields([
   { name: 'symbolImage_19', maxCount: 1 },
 ]), controller.update);
 
-router.patch('/:id/publish', authenticate, requireCurator, controller.publish);
-
 /**
  * @swagger
  * /api/v1/patterns/{id}/status:

@@ -127,20 +127,18 @@ export class CultureService {
       throw new ForbiddenError('Seuls les curateurs et admins peuvent modifier');
     }
 
-    const updated = pattern.update(dto);
-    return this.repository.update(updated);
-  }
-
-  // ── Cas d'usage : publier un motif ────────────────────────────────────────
-  async publishPattern(id: string, requesterRole: string): Promise<CulturePattern> {
-    if (!['curator', 'admin'].includes(requesterRole)) {
-      throw new ForbiddenError('Seuls les curateurs et admins peuvent publier');
+    // Vérifier si le slug a changé et si le nouveau slug existe déjà
+    if (dto.nameLocal && dto.nameLocal !== pattern.nameLocal) {
+      const newSlug = this.generateSlug(dto.nameLocal);
+      if (newSlug !== pattern.slug && await this.repository.exists(newSlug)) {
+        throw new ConflictError(`Motif avec le slug "${newSlug}" existe déjà`);
+      }
     }
 
-    const pattern = await this.repository.findById(id);
-    if (!pattern) { throw new NotFoundError(`Motif #${id}`); }
-
-    return this.repository.update(pattern.publish());
+    // Ne pas inclure le slug dans les updates pour éviter les conflits
+    const { slug, ...dtoWithoutSlug } = dto as any;
+    const updated = pattern.update(dtoWithoutSlug);
+    return this.repository.update(updated);
   }
 
   // ── Cas d'usage : mettre en avant un motif ────────────────────────────────

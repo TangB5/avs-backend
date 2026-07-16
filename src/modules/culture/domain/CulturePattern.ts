@@ -185,7 +185,27 @@ export class CulturePattern {
   }
 
   update(updates: Partial<CulturePatternProps>): CulturePattern {
-    return new CulturePattern({ ...this.props, ...updates, updatedAt: new Date() });
+    // Si nameLocal change, régénérer le slug
+    let newProps = { ...updates, updatedAt: new Date() };
+    if (updates.nameLocal && updates.nameLocal !== this.props.nameLocal) {
+      const newSlug = this.generateSlug(updates.nameLocal);
+      // Ne changer le slug que s'il est différent de l'actuel
+      if (newSlug !== this.props.slug) {
+        newProps = { ...newProps, slug: newSlug };
+      }
+    }
+    return new CulturePattern({ ...this.props, ...newProps });
+  }
+
+  private generateSlug(name: string): string {
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .slice(0, 64);
   }
 
   updateStatus(status: Status): CulturePattern {

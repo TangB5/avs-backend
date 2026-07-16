@@ -245,7 +245,7 @@ export class CultureController {
         logger.info(`[CultureController.create] SVG files received: ${svgFiles?.length || 0}`);
         if (svgFiles && Array.isArray(svgFiles) && svgFiles.length > 0 && svgFiles[0]) {
           logger.info(`[CultureController.create] Uploading SVG file: ${svgFiles[0].originalname}`);
-          const uploadResult = await this.storage.upload(svgFiles[0], 'patterns');
+          const uploadResult = await this.storage.upload(svgFiles[0]);
 
           formData.svgFilePath = uploadResult.url;
           formData.svgKey = uploadResult.key;
@@ -386,7 +386,7 @@ export class CultureController {
         logger.info(`[CultureController.update] SVG files received: ${svgFiles?.length || 0}`);
         if (svgFiles && Array.isArray(svgFiles) && svgFiles.length > 0 && svgFiles[0]) {
           logger.info(`[CultureController.update] Uploading SVG file: ${svgFiles[0].originalname}`);
-          const uploadResult = await this.storage.upload(svgFiles[0], 'patterns');
+          const uploadResult = await this.storage.upload(svgFiles[0]);
 
           formData.svgFilePath = uploadResult.url;
           formData.svgKey = uploadResult.key;
@@ -468,6 +468,23 @@ export class CultureController {
       if (validatedData.ceremonial) serviceDto.ceremonial = validatedData.ceremonial;
       if (validatedData.sources) serviceDto.sources = validatedData.sources;
       if (formData.svgFilePath) serviceDto.imgUrl = formData.svgFilePath;
+      
+      // Map origin if provided
+      if (validatedData.region && validatedData.country) {
+        serviceDto.origin = {
+          people: validatedData.people || '',
+          region: validatedData.region,
+          country: validatedData.country,
+          flag: validatedData.flag || '',
+          coords: validatedData.coords || [0, 0],
+        };
+      }
+      
+      // Map other optional fields
+      if (validatedData.colors) serviceDto.colors = validatedData.colors;
+      if (validatedData.symbols) serviceDto.symbols = validatedData.symbols;
+      if (validatedData.artisanQuote) serviceDto.artisanQuote = validatedData.artisanQuote;
+      if (validatedData.svgPattern) serviceDto.svgPattern = validatedData.svgPattern;
 
       const result = await this.service.updatePattern(
         req.params.id,
@@ -490,22 +507,6 @@ export class CultureController {
         });
         return;
       }
-      next(err);
-    }
-  };
-
-  publish = async (
-    req: Request<{ id: string }>,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
-    try {
-      const pattern = await this.service.publishPattern(
-        req.params.id,
-        req.user!.role,
-      );
-      res.json(ok(pattern.toObject(), 'Motif publié'));
-    } catch (err) {
       next(err);
     }
   };
