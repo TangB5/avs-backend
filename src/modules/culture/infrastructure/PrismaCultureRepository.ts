@@ -71,8 +71,126 @@ export class PrismaCultureRepository implements ICultureRepository {
   }
 
   async update(pattern: CulturePattern): Promise<CulturePattern> {
-    const { id, ...data } = this.toPersistence(pattern);
-    const row = await this.prisma.pattern.update({ where: { id }, data });
+    const props = pattern.toObject();
+    
+    const data: any = {
+      slug: props.slug,
+      name: props.name || '',
+      nameLocal: props.nameLocal || 'Unknown',
+      imgUrl: props.imgUrl || '',
+      type: props.type,
+      cssClass: props.cssClass,
+      era: props.era,
+      license: props.license,
+      summary: props.summary,
+      history: props.history,
+      technique: props.technique,
+      symbolism: props.symbolism,
+      ceremonial: props.ceremonial,
+      sources: props.sources,
+      downloads: props.downloads,
+      views: props.views,
+      status: props.status,
+      isFeatured: props.isFeatured,
+      updatedAt: props.updatedAt,
+    };
+
+    // Lier le creator si createdById exists
+    if (props.createdById) {
+      data.creator = { connect: { id: props.createdById } };
+    }
+
+    // Upsert origin relation
+    if (props.origin) {
+      data.origin = {
+        upsert: {
+          create: {
+            id: `${props.id}_origin`,
+            people: props.origin.people,
+            region: props.origin.region,
+            country: props.origin.country,
+            flag: props.origin.flag,
+            coords: props.origin.coords,
+          },
+          update: {
+            people: props.origin.people,
+            region: props.origin.region,
+            country: props.origin.country,
+            flag: props.origin.flag,
+            coords: props.origin.coords,
+          },
+        },
+      };
+    }
+
+    // Upsert symbolism relation
+    if (props.symbolism) {
+      data.symbolism = {
+        upsert: {
+          create: {
+            id: `${props.id}_symbolism`,
+            meaning: props.symbolism.meaning,
+            keywords: props.symbolism.keywords,
+            usage: props.symbolism.usage,
+          },
+          update: {
+            meaning: props.symbolism.meaning,
+            keywords: props.symbolism.keywords,
+            usage: props.symbolism.usage,
+          },
+        },
+      };
+    }
+
+    // Upsert artisanQuote relation
+    if (props.artisanQuote) {
+      data.artisanQuote = {
+        upsert: {
+          create: {
+            id: `${props.id}_quote`,
+            text: props.artisanQuote.text,
+            author: props.artisanQuote.author,
+            role: props.artisanQuote.role,
+            country: props.artisanQuote.country,
+          },
+          update: {
+            text: props.artisanQuote.text,
+            author: props.artisanQuote.author,
+            role: props.artisanQuote.role,
+            country: props.artisanQuote.country,
+          },
+        },
+      };
+    }
+
+    // Delete and recreate colors and symbols (simpler approach)
+    if (props.colors && props.colors.length > 0) {
+      await this.prisma.patternColor.deleteMany({ where: { patternId: props.id } });
+      data.colors = {
+        create: props.colors.map((color: any) => ({
+          hex: color.hex,
+          name: color.name,
+          meaning: color.meaning,
+        })),
+      };
+    }
+
+    if (props.symbols && props.symbols.length > 0) {
+      await this.prisma.symbol.deleteMany({ where: { patternId: props.id } });
+      data.symbols = {
+        create: props.symbols.map((symbol: any) => ({
+          name: symbol.name,
+          nameFr: symbol.nameFr,
+          cssPreview: symbol.cssPreview,
+          imageUrl: symbol.imageUrl || '',
+          meaning: symbol.meaning,
+          usage: symbol.usage,
+          sacred: symbol.sacred,
+        })),
+      };
+    }
+
+    const row = await this.prisma.pattern.update({ where: { id: props.id }, data });
     return this.toDomain(row);
   }
 
@@ -184,6 +302,17 @@ export class PrismaCultureRepository implements ICultureRepository {
           usage: symbol.usage,
           sacred: symbol.sacred,
         })),
+      };
+    }
+
+    if (props.symbolism) {
+      data.symbolism = {
+        create: {
+          id: `${props.id}_symbolism`,
+          meaning: props.symbolism.meaning,
+          keywords: props.symbolism.keywords,
+          usage: props.symbolism.usage,
+        },
       };
     }
 

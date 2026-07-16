@@ -510,6 +510,40 @@ export class CultureController {
     }
   };
 
+  updateStatus = async (
+    req: Request<{ id: string }>,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const { status } = req.body;
+      const pattern = await this.service.updatePatternStatus(
+        req.params.id,
+        status,
+        req.user!.role,
+      );
+      res.json(ok(pattern.toObject(), 'Statut mis à jour'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  toggleFeatured = async (
+    req: Request<{ id: string }>,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const { featured } = req.body;
+      const pattern = featured
+        ? await this.service.featurePattern(req.params.id, req.user!.role)
+        : await this.service.unfeaturePattern(req.params.id, req.user!.role);
+      res.json(ok(pattern.toObject(), featured ? 'Motif mis en vedette' : 'Motif retiré des vedettes'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
   remove = async (
     req: Request<{ id: string }>,
     res: Response,

@@ -587,6 +587,81 @@ router.patch('/:id/publish', authenticate, requireCurator, controller.publish);
 
 /**
  * @swagger
+ * /api/v1/patterns/{id}/status:
+ *   patch:
+ *     summary: Mettre à jour le statut d'un motif
+ *     tags: [Patterns]
+ *     description: Change le statut d'un motif (DRAFT, PUBLISHED, REVIEW, REJECTED). Requiert le rôle **curator** ou **admin**.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *         description: ID du motif
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [DRAFT, PUBLISHED, REVIEW, REJECTED]
+ *                 description: Nouveau statut
+ *     responses:
+ *       200:
+ *         description: Statut mis à jour
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.patch('/:id/status', authenticate, requireCurator, controller.updateStatus);
+
+/**
+ * @swagger
+ * /api/v1/patterns/{id}/featured:
+ *   patch:
+ *     summary: Mettre en vedette ou retirer des vedettes
+ *     tags: [Patterns]
+ *     description: Active ou désactive la mise en vedette d'un motif. Requiert le rôle **admin**.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *         description: ID du motif
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               featured:
+ *                 type: boolean
+ *                 description: true pour mettre en vedette, false pour retirer
+ *     responses:
+ *       200:
+ *         description: Mis en vedette ou retiré des vedettes
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.patch('/:id/featured', authenticate, requireAdmin, controller.toggleFeatured);
+
+/**
+ * @swagger
  * /api/v1/patterns/{id}:
  *   delete:
  *     summary: Supprimer un motif culturel

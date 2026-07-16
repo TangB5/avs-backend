@@ -155,6 +155,31 @@ export class CultureService {
     return this.repository.update(pattern.feature());
   }
 
+  // ── Cas d'usage : retirer la mise en avant d'un motif ─────────────────────
+  async unfeaturePattern(id: string, requesterRole: string): Promise<CulturePattern> {
+    if (requesterRole !== 'admin') {
+      throw new ForbiddenError('Seuls les admins peuvent retirer la mise en avant');
+    }
+
+    const pattern = await this.repository.findById(id);
+    if (!pattern) { throw new NotFoundError(`Motif #${id}`); }
+
+    return this.repository.update(pattern.unfeature());
+  }
+
+  // ── Cas d'usage : mettre à jour le statut d'un motif ───────────────────────
+  async updatePatternStatus(id: string, status: string, requesterRole: string): Promise<CulturePattern> {
+    if (!['curator', 'admin'].includes(requesterRole)) {
+      throw new ForbiddenError('Seuls les curateurs et admins peuvent modifier le statut');
+    }
+
+    const pattern = await this.repository.findById(id);
+    if (!pattern) { throw new NotFoundError(`Motif #${id}`); }
+
+    const updated = pattern.updateStatus(status.toUpperCase() as any);
+    return this.repository.update(updated);
+  }
+
   // ── Cas d'usage : incrémenter les téléchargements ─────────────────────────
   async trackDownload(slug: string): Promise<CulturePattern> {
     const pattern = await this.repository.findBySlug(slug);

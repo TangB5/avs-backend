@@ -115,7 +115,7 @@ export class AuthService {
       {
         userId: user.id,
         email: user.email,
-        role: user.role,
+        role: user.role.toLowerCase() as 'viewer' | 'contributor' | 'curator' | 'admin',
       },
       this.jwtSecret,
       { expiresIn: this.accessExpiry }

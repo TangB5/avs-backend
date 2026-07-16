@@ -188,5 +188,9 @@ export class CulturePattern {
     return new CulturePattern({ ...this.props, ...updates, updatedAt: new Date() });
   }
 
+  updateStatus(status: Status): CulturePattern {
+    return new CulturePattern({ ...this.props, status, updatedAt: new Date() });
+  }
+
   toObject(): CulturePatternProps { return { ...this.props }; }
 }
