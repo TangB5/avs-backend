@@ -39,4 +39,25 @@ export class AwsProvider implements IStorageProvider {
       Key: key,
     });
   }
+
+  async download(key: string): Promise<Buffer> {
+    const response = await this.s3.getObject({
+      Bucket: this.bucket,
+      Key: key,
+    });
+    
+    if (!response.Body) {
+      throw new Error('No data returned from S3');
+    }
+
+    // Convert the stream to Buffer
+    const chunks: Uint8Array[] = [];
+    const stream = response.Body as any;
+    
+    for await (const chunk of stream) {
+      chunks.push(chunk);
+    }
+
+    return Buffer.concat(chunks);
+  }
 }

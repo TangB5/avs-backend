@@ -343,39 +343,6 @@ router.post('/', authenticate, authRateLimiter, uploadSvg.fields([
 
 /**
  * @swagger
- * /api/v1/patterns/{id}/publish:
- *   patch:
- *     summary: Publier un motif culturel
- *     description: Rend le motif visible publiquement. Requiert le rôle **curator** ou **admin**.
- *     tags: [Patterns]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string }
- *         description: ID du motif à publier
- *     responses:
- *       200:
- *         description: Motif publié avec succès
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/ApiResponse'
- *                 - type: object
- *                   properties:
- *                     data: { $ref: '#/components/schemas/CulturePattern' }
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *       403:
- *         $ref: '#/components/responses/Forbidden'
- *       404:
- *         $ref: '#/components/responses/NotFound'
- */
-/**
- * @swagger
  * /api/v1/patterns/{id}:
  *   patch:
  *     summary: Mettre à jour un motif culturel
@@ -684,6 +651,32 @@ router.patch('/:id/featured', authenticate, requireAdmin, controller.toggleFeatu
  *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', authenticate, requireAdmin, controller.remove);
+
+/**
+ * @swagger
+ * /api/v1/patterns/{id}/download:
+ *   get:
+ *     summary: Télécharger le SVG d'un motif
+ *     tags: [Patterns]
+ *     description: Télécharge le fichier SVG du motif et incrémente le compteur de téléchargements.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *         description: ID du motif
+ *     responses:
+ *       200:
+ *         description: Fichier SVG téléchargé
+ *         content:
+ *           image/svg+xml:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.get('/:id/download', controller.download);
 
 export default router;
 

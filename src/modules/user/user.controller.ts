@@ -1,8 +1,31 @@
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs/promises';
+import { v4 as uuidv4 } from 'uuid';
 import { UserService } from '@/modules/user/application/user.service';
 import { ok } from '@/shared/types/api.types';
 import { StatusCodes } from 'http-status-codes';
+import { createStorageService } from '@/infra/storage/storage.factory';
+
+// ── Multer configuration for avatar upload ─────────────────────────────────────
+const storage = multer.memoryStorage();
+
+const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed'));
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
 
 const UpdateSchema = z.object({
   name: z.string().min(2).max(64).optional(),
@@ -15,8 +38,17 @@ const UpdateSchema = z.object({
   avatar: z.string().optional(),
 });
 
+const RoleSchema = z.object({
+  role: z.enum(['viewer', 'contributor', 'curator', 'admin']),
+});
+
+const VerificationSchema = z.object({
+  verified: z.boolean(),
+});
+
 export class UserController {
   constructor(private readonly service: UserService) {}
+  private storage = createStorageService();
 
   getMe = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -127,6 +159,97 @@ export class UserController {
 
       await this.service.deleteUser(userId);
       res.status(StatusCodes.NO_CONTENT).send();
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  uploadAvatar = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
+
+      const file = req.file as Express.Multer.File;
+      if (!file) {
+        res.status(StatusCodes.BAD_REQUEST).json({ success: false, message: 'No file uploaded' });
+        return;
+      }
+
+      // Upload to Supabase using the storage service
+      const uploadResult = await this.storage.upload(file, 'avatars');
+
+      // Update user avatar URL
+      const user = await this.service.updateUser(userId, { avatar: uploadResult.url });
+      const { passwordHash, ...safeUser } = user;
+
+      res.json(ok(safeUser, 'Avatar uploaded successfully'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  // Admin methods
+  getAllUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { search, role } = req.query;
+      const users = await this.service.getAllUsers(
+        search as string ,
+        role as string 
+      );
+      const safeUsers = users.map((user) => {
+        const { passwordHash, ...safeUser } = user;
+        return safeUser;
+      });
+      res.json(ok(safeUsers, 'Users retrieved'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  updateUserRole = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { userId } = req.params;
+      const { role } = RoleSchema.parse(req.body);
+
+      const user = await this.service.updateUserRole(userId as string, role);
+      const { passwordHash, ...safeUser } = user;
+
+      res.json(ok(safeUser, 'User role updated'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  toggleUserVerification = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { userId } = req.params;
+      const { verified } = VerificationSchema.parse(req.body);
+
+      const user = await this.service.toggleUserVerification(userId as string, verified);
+      const { passwordHash, ...safeUser } = user;
+
+      res.json(ok(safeUser, 'User verification updated'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getPlatformStats = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const stats = await this.service.getPlatformStats();
+      res.json(ok(stats, 'Platform stats retrieved'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getContributors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const contributors = await this.service.getContributors();
+      res.json(ok(contributors, 'Contributors retrieved'));
     } catch (err) {
       next(err);
     }

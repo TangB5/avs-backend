@@ -33,12 +33,13 @@ export interface UserActivity {
 }
 
 export interface UserStats {
-  patternsCount: number;
-  downloadsTotal: number;
-  viewsTotal: number;
-  favoritesCount: number;
-  commentsCount: number;
-  trends: {
+  patternsCreated: number;
+  totalViews: number;
+  memberSince: string;
+  downloadsTotal?: number;
+  favoritesCount?: number;
+  commentsCount?: number;
+  trends?: {
     patternsTrend: string;
     downloadsTrend: string;
     viewsTrend: string;
@@ -67,6 +68,13 @@ export class UserService {
     const user = await this.repository.findById(userId);
     if (!user) throw new Error('User not found');
 
+    // Format member since date
+    const memberSince = user.createdAt.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+
     // Current month start
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -74,7 +82,7 @@ export class UserService {
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
 
     // Count patterns by this user
-    const patternsCount = await this.db.pattern.count({
+    const patternsCreated = await this.db.pattern.count({
       where: { createdById: userId },
     });
 
@@ -85,7 +93,7 @@ export class UserService {
     });
 
     const downloadsTotal = patterns.reduce((sum, p) => sum + (p.downloads || 0), 0);
-    const viewsTotal = patterns.reduce((sum, p) => sum + (p.views || 0), 0);
+    const totalViews = patterns.reduce((sum, p) => sum + (p.views || 0), 0);
 
     // Count comments by this user
     const commentsCount = await this.db.comment.count({
@@ -177,9 +185,10 @@ export class UserService {
     const favoritesTrend = favoritesDiff >= 0 ? `+${favoritesDiff} nouveaux` : `${favoritesDiff} nouveaux`;
 
     return {
-      patternsCount,
+      patternsCreated,
+      totalViews,
+      memberSince,
       downloadsTotal,
-      viewsTotal,
       favoritesCount,
       commentsCount,
       trends: {
@@ -269,6 +278,155 @@ export class UserService {
 
   async verifyUser(userId: string): Promise<User> {
     return this.repository.update(userId, { verified: true });
+  }
+
+  // Admin methods
+  async getAllUsers(search: string, role: string ): Promise<User[]> {
+    const where: any = {};
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (role) {
+      where.role = role;
+    }
+
+    return this.db.user.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<User> {
+    const user = await this.repository.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    return this.repository.update(userId, { role });
+  }
+
+  async toggleUserVerification(userId: string, verified: boolean): Promise<User> {
+    const user = await this.repository.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    return this.repository.update(userId, { verified });
+  }
+
+  async getPlatformStats(): Promise<{
+    totalUsers: number;
+    totalPatterns: number;
+    totalDownloads: number;
+    totalViews: number;
+    verifiedUsers: number;
+    admins: number;
+    curators: number;
+    contributors: number;
+    patternsByStatus: {
+      published: number;
+      draft: number;
+      review: number;
+    };
+  }> {
+    const [totalUsers, totalPatterns, totalDownloads, totalViews, admins, curators, contributors, verifiedUsers] = await Promise.all([
+      this.db.user.count(),
+      this.db.pattern.count(),
+      this.db.pattern.aggregate({ _sum: { downloads: true } }),
+      this.db.pattern.aggregate({ _sum: { views: true } }),
+      this.db.user.count({ where: { role: 'ADMIN' } }),
+      this.db.user.count({ where: { role: 'CURATOR' } }),
+      this.db.user.count({ where: { role: 'CONTRIBUTOR' } }),
+      this.db.user.count({ where: { verified: true } }),
+    ]);
+
+    const patternsByStatus = await this.db.pattern.groupBy({
+      by: ['status'],
+      _count: true,
+    });
+
+    const statusCounts = {
+      published: 0,
+      draft: 0,
+      review: 0,
+    };
+
+    patternsByStatus.forEach((item) => {
+      const status = item.status.toLowerCase() as keyof typeof statusCounts;
+      if (statusCounts[status] !== undefined) {
+        statusCounts[status] = item._count;
+      }
+    });
+
+    return {
+      totalUsers,
+      totalPatterns,
+      totalDownloads: totalDownloads._sum.downloads || 0,
+      totalViews: totalViews._sum.views || 0,
+      verifiedUsers,
+      admins,
+      curators,
+      contributors,
+      patternsByStatus: statusCounts,
+    };
+  }
+
+  async getContributors(): Promise<any[]> {
+    const users = await this.db.user.findMany({
+      where: {
+        role: {
+          in: ['ADMIN', 'CURATOR', 'CONTRIBUTOR'],
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    const contributorsWithStats = await Promise.all(
+      users.map(async (user) => {
+        const patterns = await this.db.pattern.findMany({
+          where: { createdById: user.id },
+          select: {
+            views: true,
+            downloads: true,
+          },
+        });
+
+        const totalPatterns = patterns.length;
+        const totalViews = patterns.reduce((sum, p) => sum + (p.views || 0), 0);
+        const totalDownloads = patterns.reduce((sum, p) => sum + (p.downloads || 0), 0);
+
+        // Calculate a simple score based on patterns, views, and downloads
+        const score = Math.min(100, Math.round(
+          (totalPatterns * 2) + 
+          (totalViews / 1000) + 
+          (totalDownloads / 100)
+        ));
+
+        return {
+          id: user.id,
+          name: user.name,
+          role: user.role.toLowerCase(),
+          origin: user.location || 'Non renseigné',
+          country: 'CM', // Default for now, could be stored in user profile
+          specialty: 'Artisan textile', // Default for now
+          patterns: totalPatterns,
+          views: totalViews,
+          downloads: totalDownloads,
+          score,
+          verified: user.verified,
+          featured: user.role === 'ADMIN' || user.role === 'CURATOR',
+          github: user.github,
+          avatarCSS: 'avs-pattern-kente-royale', // Default pattern
+          joinedYear: user.createdAt.getFullYear(),
+          badges: user.verified ? ['Vérifié'] : [],
+        };
+      })
+    );
+
+    return contributorsWithStats.sort((a, b) => b.score - a.score);
   }
 }
 

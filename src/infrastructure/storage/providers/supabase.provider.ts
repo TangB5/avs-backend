@@ -47,4 +47,23 @@ export class SupabaseProvider implements IStorageProvider {
   async delete(key: string) {
     await this.client.storage.from(this.bucket).remove([key]);
   }
+
+  async download(key: string): Promise<Buffer> {
+    const { data, error } = await this.client.storage
+      .from(this.bucket)
+      .download(key);
+
+    if (error) {
+      logger.error(`[SupabaseProvider] Download failed - Error: ${error.message}`);
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error('No data returned from Supabase');
+    }
+
+    // Convert the Blob to Buffer
+    const arrayBuffer = await data.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
 }

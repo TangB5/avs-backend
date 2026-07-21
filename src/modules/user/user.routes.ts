@@ -1,8 +1,9 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { UserController } from '@/modules/user/user.controller';
 import { UserService } from '@/modules/user/application/user.service';
 import { PrismaUserRepository } from '@/modules/user/infrastructure/PrismaUserRepository';
-import { authenticate } from '@/shared/middlewares/auth.middleware';
+import { authenticate, requireAdmin } from '@/shared/middlewares/auth.middleware';
 import { db } from '@/config/database';
 
 const router = Router();
@@ -11,6 +12,12 @@ const router = Router();
 const repository = new PrismaUserRepository(db);
 const service = new UserService(repository as any, db);
 const controller = new UserController(service);
+
+// Multer configuration for avatar upload
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
 
 /**
  * @swagger
@@ -138,5 +145,162 @@ router.patch('/me', authenticate, controller.update);
  *         $ref: '#/components/responses/Unauthorized'
  */
 router.delete('/me', authenticate, controller.delete);
+
+/**
+ * @swagger
+ * /api/v1/users/me/avatar:
+ *   post:
+ *     summary: Upload user avatar
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Avatar uploaded
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.post('/me/avatar', authenticate, upload.single('avatar'), controller.uploadAvatar);
+
+/**
+ * @swagger
+ * /api/v1/users/admin:
+ *   get:
+ *     summary: Get all users (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by name or email
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [viewer, contributor, curator, admin]
+ *         description: Filter by role
+ *     responses:
+ *       200:
+ *         description: List of users
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.get('/admin', authenticate, requireAdmin, controller.getAllUsers);
+
+/**
+ * @swagger
+ * /api/v1/users/admin/{userId}/role:
+ *   patch:
+ *     summary: Update user role (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [viewer, contributor, curator, admin]
+ *     responses:
+ *       200:
+ *         description: User role updated
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.patch('/admin/:userId/role', authenticate, requireAdmin, controller.updateUserRole);
+
+/**
+ * @swagger
+ * /api/v1/users/admin/{userId}/verification:
+ *   patch:
+ *     summary: Toggle user verification (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               verified:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: User verification updated
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.patch('/admin/:userId/verification', authenticate, requireAdmin, controller.toggleUserVerification);
+
+/**
+ * @swagger
+ * /api/v1/users/admin/stats:
+ *   get:
+ *     summary: Get platform-wide statistics (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Platform statistics
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.get('/admin/stats', authenticate, requireAdmin, controller.getPlatformStats);
+
+/**
+ * @swagger
+ * /api/v1/users/contributors:
+ *   get:
+ *     summary: Get contributors with stats
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of contributors with stats
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.get('/contributors', authenticate, controller.getContributors);
 
 export default router;

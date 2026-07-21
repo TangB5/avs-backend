@@ -293,12 +293,17 @@ export class CultureController {
         `[CultureController.create] Total symbol images collected: ${Object.keys(symbolImages).length}`,
       );
 
-      // Add image URLs to symbols
+      // Add image URLs to symbols - preserve existing URLs if no new image uploaded
       if (formData.symbols && Array.isArray(formData.symbols)) {
-        formData.symbols = formData.symbols.map((symbol: any, index: number) => ({
-          ...symbol,
-          imageUrl: symbolImages[index.toString()] || symbol.imageUrl,
-        }));
+        formData.symbols = formData.symbols.map((symbol: any, index: number) => {
+          const newImageUrl = symbolImages[index.toString()];
+          // Only update imageUrl if a new image was uploaded
+          if (newImageUrl) {
+            return { ...symbol, imageUrl: newImageUrl };
+          }
+          // Keep existing imageUrl if present, otherwise keep as is
+          return symbol.imageUrl ? { ...symbol, imageUrl: symbol.imageUrl } : symbol;
+        });
       }
 
       // Validate with Zod schema
@@ -440,12 +445,17 @@ export class CultureController {
         );
       }
 
-      // Add image URLs to symbols
+      // Add image URLs to symbols - preserve existing URLs if no new image uploaded
       if (formData.symbols && Array.isArray(formData.symbols)) {
-        formData.symbols = formData.symbols.map((symbol: any, index: number) => ({
-          ...symbol,
-          imageUrl: symbolImages[index.toString()] || symbol.imageUrl,
-        }));
+        formData.symbols = formData.symbols.map((symbol: any, index: number) => {
+          const newImageUrl = symbolImages[index.toString()];
+          // Only update imageUrl if a new image was uploaded
+          if (newImageUrl) {
+            return { ...symbol, imageUrl: newImageUrl };
+          }
+          // Keep existing imageUrl if present, otherwise keep as is
+          return symbol.imageUrl ? { ...symbol, imageUrl: symbol.imageUrl } : symbol;
+        });
       }
 
       // Create partial schema for updates (all fields optional)
@@ -553,6 +563,48 @@ export class CultureController {
     try {
       await this.service.deletePattern(req.params.id, req.user!.role);
       res.status(StatusCodes.NO_CONTENT).send();
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  download = async (
+    req: Request<{ id: string }>,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const pattern = await this.service.getPatternForDownload(req.params.id);
+      
+      // Extract the file path from the URL
+      // URL format: https://.../storage/v1/object/public/patterns/filename.svg
+      if (!pattern.imgUrl) {
+        res.status(404).json({ success: false, message: 'Pattern SVG URL not found' });
+        return;
+      }
+
+      const urlParts = pattern.imgUrl.split('/patterns/');
+      if (urlParts.length < 2 || !urlParts[1]) {
+        res.status(400).json({ success: false, message: 'Invalid pattern URL' });
+        return;
+      }
+      const filePath = urlParts[1] as string;
+
+      // Use storage provider to download the file
+      const fileBuffer = await this.storage.download(filePath);
+
+      if (!fileBuffer) {
+        res.status(404).json({ success: false, message: 'Failed to download SVG from storage' });
+        return;
+      }
+      
+      // Increment download counter
+      await this.service.incrementDownload(req.params.id);
+
+      // Send SVG file
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Content-Disposition', `attachment; filename="${pattern.slug}.svg"`);
+      res.send(fileBuffer);
     } catch (err) {
       next(err);
     }

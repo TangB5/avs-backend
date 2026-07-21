@@ -33,4 +33,22 @@ export class StorageService {
       }
     }
   }
+
+  async download(key: string): Promise<Buffer> {
+    let lastError: any;
+
+    for (const provider of this.providers) {
+      try {
+        logger.info(`[StorageService] Trying provider for download: ${provider.constructor.name}`);
+        const result = await provider.download(key);
+        logger.info(`[StorageService] Download SUCCESS via ${provider.constructor.name}`);
+        return result;
+      } catch (err) {
+        lastError = err;
+        logger.error(`[StorageService] Provider download failed: ${provider.constructor.name} - ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
+    throw new Error(`All storage providers failed for download: ${lastError?.message}`);
+  }
 }

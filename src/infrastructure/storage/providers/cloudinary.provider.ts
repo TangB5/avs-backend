@@ -36,4 +36,19 @@ export class CloudinaryProvider implements IStorageProvider {
   async delete(key: string): Promise<void> {
     await cloudinary.v2.uploader.destroy(key);
   }
+
+  async download(key: string): Promise<Buffer> {
+    const url = cloudinary.v2.url(key, {
+      resource_type: 'auto',
+    });
+
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to download from Cloudinary: ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
 }

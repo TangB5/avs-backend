@@ -186,6 +186,22 @@ export class CultureService {
     return this.repository.update(pattern.incrementDownload());
   }
 
+  // ── Cas d'usage : récupérer un motif pour téléchargement ─────────────────────
+  async getPatternForDownload(id: string): Promise<CulturePattern> {
+    const pattern = await this.repository.findById(id);
+    if (!pattern) { throw new NotFoundError(`Motif #${id}`); }
+    return pattern;
+  }
+
+  // ── Cas d'usage : incrémenter le compteur de téléchargements par ID ───────────
+  async incrementDownload(id: string): Promise<void> {
+    const pattern = await this.repository.findById(id);
+    if (!pattern) { throw new NotFoundError(`Motif #${id}`); }
+    
+    const updated = pattern.incrementDownload();
+    await this.repository.update(updated);
+  }
+
   // ── Cas d'usage : supprimer un motif ──────────────────────────────────────
   async deletePattern(id: string, requesterRole: string): Promise<void> {
     if (requesterRole !== 'admin') {
