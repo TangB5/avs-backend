@@ -123,8 +123,8 @@ export class CultureService {
     const pattern = await this.repository.findById(id);
     if (!pattern) { throw new NotFoundError(`Motif #${id}`); }
 
-    if (!['curator', 'admin'].includes(requesterRole)) {
-      throw new ForbiddenError('Seuls les curateurs et admins peuvent modifier');
+    if (!this.isCuratorOrAdmin(requesterRole)) {
+      throw new ForbiddenError('Seuls les curateurs, admins et super_admins peuvent modifier');
     }
 
     // Vérifier si le slug a changé et si le nouveau slug existe déjà
@@ -143,8 +143,8 @@ export class CultureService {
 
   // ── Cas d'usage : mettre en avant un motif ────────────────────────────────
   async featurePattern(id: string, requesterRole: string): Promise<CulturePattern> {
-    if (requesterRole !== 'admin') {
-      throw new ForbiddenError('Seuls les admins peuvent mettre en avant un motif');
+    if (!this.isAdminLike(requesterRole)) {
+      throw new ForbiddenError('Seuls les admins et super_admins peuvent mettre en avant un motif');
     }
 
     const pattern = await this.repository.findById(id);
@@ -155,8 +155,8 @@ export class CultureService {
 
   // ── Cas d'usage : retirer la mise en avant d'un motif ─────────────────────
   async unfeaturePattern(id: string, requesterRole: string): Promise<CulturePattern> {
-    if (requesterRole !== 'admin') {
-      throw new ForbiddenError('Seuls les admins peuvent retirer la mise en avant');
+    if (!this.isAdminLike(requesterRole)) {
+      throw new ForbiddenError('Seuls les admins et super_admins peuvent retirer la mise en avant');
     }
 
     const pattern = await this.repository.findById(id);
@@ -204,14 +204,29 @@ export class CultureService {
 
   // ── Cas d'usage : supprimer un motif ──────────────────────────────────────
   async deletePattern(id: string, requesterRole: string): Promise<void> {
-    if (requesterRole !== 'admin') {
-      throw new ForbiddenError('Seuls les admins peuvent supprimer');
+    if (!this.isAdminLike(requesterRole)) {
+      throw new ForbiddenError('Seuls les admins et super_admins peuvent supprimer');
     }
 
     const pattern = await this.repository.findById(id);
     if (!pattern) { throw new NotFoundError(`Motif #${id}`); }
 
     await this.repository.delete(id);
+  }
+
+  // ── Utilitaires de rôle ───────────────────────────────────────────────────
+  private normalizeRole(role?: string): string {
+    return (role ?? '').toLowerCase();
+  }
+
+  private isCuratorOrAdmin(role?: string): boolean {
+    const normalized = this.normalizeRole(role);
+    return ['curator', 'admin', 'super_admin'].includes(normalized);
+  }
+
+  private isAdminLike(role?: string): boolean {
+    const normalized = this.normalizeRole(role);
+    return ['admin', 'super_admin'].includes(normalized);
   }
 
   // ── Utilitaire : génération de slug ───────────────────────────────────────

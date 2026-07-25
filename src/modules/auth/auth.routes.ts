@@ -108,6 +108,8 @@ router.post('/login', controller.login);
  *       200:
  *         description: Logout successful
  */
+router.post('/github', controller.githubLogin);
+
 router.post('/logout', controller.logout);
 
 /**

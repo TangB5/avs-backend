@@ -16,6 +16,10 @@ const RegisterSchema = z.object({
   role: z.enum(['VIEWER', 'CONTRIBUTOR', 'CURATOR']).optional(),
 });
 
+const GithubAuthSchema = z.object({
+  accessToken: z.string().min(1),
+});
+
 export class AuthController {
   constructor(private readonly service: AuthService) {}
 
@@ -48,6 +52,22 @@ export class AuthController {
       this.setAuthCookies(res, result.tokens);
 
       res.json(ok({ user: result.user }, 'Login successful'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  // ─────────────────────────────────────────
+  // GITHUB LOGIN
+  // ─────────────────────────────────────────
+  githubLogin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = GithubAuthSchema.parse(req.body);
+      const result = await this.service.githubLogin(data);
+
+      this.setAuthCookies(res, result.tokens);
+
+      res.json(ok({ user: result.user }, 'GitHub login successful'));
     } catch (err) {
       next(err);
     }

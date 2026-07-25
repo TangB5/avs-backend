@@ -16,6 +16,10 @@ export interface RegisterDto {
   role?: Role;
 }
 
+export interface GithubLoginDto {
+  accessToken: string;
+}
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
@@ -70,6 +74,72 @@ export class AuthService {
 
     if (!isValid) {
       throw new UnauthorizedError('Invalid email or password');
+    }
+
+    return this.generateAuthResponse(user);
+  }
+
+  // ─────────────────────────────────────────
+  // GITHUB LOGIN
+  // ─────────────────────────────────────────
+  async githubLogin(dto: GithubLoginDto): Promise<AuthResponse> {
+    const githubUserResponse = await fetch('https://api.github.com/user', {
+      headers: {
+        Authorization: `Bearer ${dto.accessToken}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!githubUserResponse.ok) {
+      throw new UnauthorizedError('GitHub authentication failed');
+    }
+
+    const githubProfile = (await githubUserResponse.json()) as {
+      login?: string;
+      name?: string;
+      email?: string;
+      id?: number;
+    };
+
+    const emailsResponse = await fetch('https://api.github.com/user/emails', {
+      headers: {
+        Authorization: `Bearer ${dto.accessToken}`,
+        Accept: 'application/json',
+      },
+    });
+
+    let email = githubProfile.email ?? null;
+
+    if (emailsResponse.ok) {
+      const emails = (await emailsResponse.json()) as Array<{
+        email?: string;
+        primary?: boolean;
+        verified?: boolean;
+      }>;
+
+      const primaryEmail = emails.find((entry) => entry.primary && entry.verified && entry.email) ?? emails.find((entry) => entry.verified && entry.email);
+      if (primaryEmail?.email) {
+        email = primaryEmail.email;
+      }
+    }
+
+    const normalizedEmail = email ?? `${githubProfile.login ?? githubProfile.id ?? 'github'}@github.local`;
+    const githubUsername = githubProfile.login ?? null;
+    const displayName = githubProfile.name?.trim() || githubProfile.login || 'GitHub User';
+
+    let user = await this.userRepository.findByEmail(normalizedEmail);
+
+    if (!user) {
+      user = await this.userRepository.create({
+        email: normalizedEmail,
+        name: displayName,
+        passwordHash: null,
+        role: 'VIEWER',
+        github: githubUsername ?? undefined,
+        verified: true,
+      });
+    } else if (!user.github && githubUsername) {
+      user = await this.userRepository.update(user.id, { github: githubUsername });
     }
 
     return this.generateAuthResponse(user);
