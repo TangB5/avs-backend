@@ -156,19 +156,45 @@ export class CultureController {
   list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { page = '1', perPage = '20', search } = req.query as Record<string, string | undefined>;
+      const userId = req.user?.userId;
+      const userRole = req.user?.role;
 
       const pageNum = parseInt(page) || 1;
       const perPageNum = parseInt(perPage) || 20;
       const skip = (pageNum - 1) * perPageNum;
 
-      const where = search
-        ? {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' as const } },
-              { nameLocal: { contains: search, mode: 'insensitive' as const } },
-            ],
-          }
-        : {};
+      let where: any = {};
+
+      // Filtrage par rôle
+      if (!userRole || userRole === 'viewer') {
+        // Les viewers ne voient que les patterns publiés
+        where.status = 'PUBLISHED';
+      } else if (userRole === 'contributor' || userRole === 'curator') {
+        // Les contributors et curateurs ne voient que leurs patterns
+        where.createdById = userId;
+      }
+      // admin et super_admin voient tout (pas de filtre)
+
+      // Ajouter le filtre de recherche si fourni
+      if (search) {
+        const searchCondition = {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' as const } },
+            { nameLocal: { contains: search, mode: 'insensitive' as const } },
+          ],
+        };
+
+        if (where.OR) {
+          // Combiner avec le filtre de rôle existant
+          where.AND = [
+            { OR: where.OR },
+            searchCondition,
+          ];
+          delete where.OR;
+        } else {
+          Object.assign(where, searchCondition);
+        }
+      }
 
       const [patterns, totalItems] = await Promise.all([
         db.pattern.findMany({
@@ -605,6 +631,24 @@ export class CultureController {
       res.setHeader('Content-Type', 'image/svg+xml');
       res.setHeader('Content-Disposition', `attachment; filename="${pattern.slug}.svg"`);
       res.send(fileBuffer);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getRecentGlobal = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { limit = '5' } = req.query as Record<string, string>;
+      const limitNum = parseInt(limit) || 5;
+
+      const patterns = await db.pattern.findMany({
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+        include: { origin: true, colors: true, symbols: true, artisanQuote: true, symbolism: true },
+      });
+
+      const data = PatternListResponseMapper.toPatternDocArray(patterns);
+      res.json(ok(data, 'Recent patterns retrieved'));
     } catch (err) {
       next(err);
     }

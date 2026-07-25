@@ -3,7 +3,7 @@ import multer from 'multer';
 import { UserController } from '@/modules/user/user.controller';
 import { UserService } from '@/modules/user/application/user.service';
 import { PrismaUserRepository } from '@/modules/user/infrastructure/PrismaUserRepository';
-import { authenticate, requireAdmin } from '@/shared/middlewares/auth.middleware';
+import { authenticate, requireAdmin, requireSuperAdmin } from '@/shared/middlewares/auth.middleware';
 import { db } from '@/config/database';
 
 const router = Router();
@@ -234,7 +234,7 @@ router.get('/admin', authenticate, requireAdmin, controller.getAllUsers);
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.patch('/admin/:userId/role', authenticate, requireAdmin, controller.updateUserRole);
+router.patch('/admin/:userId/role', authenticate, requireSuperAdmin, controller.updateUserRole);
 
 /**
  * @swagger
@@ -302,5 +302,55 @@ router.get('/admin/stats', authenticate, requireAdmin, controller.getPlatformSta
  *         $ref: '#/components/responses/Unauthorized'
  */
 router.get('/contributors', authenticate, controller.getContributors);
+
+/**
+ * @swagger
+ * /api/v1/users/become-curator:
+ *   post:
+ *     summary: Become a curator
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - bio
+ *               - specialty
+ *               - location
+ *             properties:
+ *               bio:
+ *                 type: string
+ *                 minLength: 10
+ *                 maxLength: 280
+ *               specialty:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 64
+ *               location:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 64
+ *               website:
+ *                 type: string
+ *                 format: uri
+ *               github:
+ *                 type: string
+ *                 maxLength: 39
+ *               twitter:
+ *                 type: string
+ *                 maxLength: 15
+ *     responses:
+ *       200:
+ *         description: User promoted to curator
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       400:
+ *         description: Invalid input or already curator
+ */
+router.post('/become-curator', authenticate, controller.becomeCurator);
 
 export default router;

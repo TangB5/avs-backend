@@ -5,7 +5,7 @@ import { UnauthorizedError, ForbiddenError } from '../errors/AppError';
 export interface JwtPayload {
   userId: string;
   email:  string;
-  role:   'viewer' | 'contributor' | 'curator' | 'admin';
+  role:   'viewer' | 'contributor' | 'curator' | 'admin' | 'super_admin';
   iat:    number;
   exp:    number;
 }
@@ -54,5 +54,6 @@ export const requireRole = (...roles: JwtPayload['role'][]): RequestHandler =>
     next();
   };
 
-export const requireCurator = requireRole('curator', 'admin');
-export const requireAdmin = requireRole('admin');
+export const requireCurator = requireRole('curator', 'admin', 'super_admin');
+export const requireAdmin = requireRole('admin', 'super_admin');
+export const requireSuperAdmin = requireRole('super_admin');

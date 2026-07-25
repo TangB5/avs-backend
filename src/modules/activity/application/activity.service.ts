@@ -65,4 +65,8 @@ export class ActivityService {
   }> {
     return this.repository.getGlobalStats();
   }
+
+  async getGlobalActivity(params?: { skip?: number; take?: number }): Promise<Activity[]> {
+    return this.repository.findGlobal(params);
+  }
 }

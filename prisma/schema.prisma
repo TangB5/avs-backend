@@ -12,6 +12,7 @@ enum Role {
   CONTRIBUTOR
   CURATOR
   ADMIN
+  SUPER_ADMIN
 }
 
 enum PatternType {

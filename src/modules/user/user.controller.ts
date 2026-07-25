@@ -39,11 +39,23 @@ const UpdateSchema = z.object({
 });
 
 const RoleSchema = z.object({
-  role: z.enum(['viewer', 'contributor', 'curator', 'admin']),
-});
+  role: z.enum(['viewer', 'contributor', 'curator', 'admin', 'super_admin']),
+}).transform((data) => ({
+  ...data,
+  role: data.role.toUpperCase() as 'VIEWER' | 'CONTRIBUTOR' | 'CURATOR' | 'ADMIN' | 'SUPER_ADMIN',
+}));
 
 const VerificationSchema = z.object({
   verified: z.boolean(),
+});
+
+const BecomeCuratorSchema = z.object({
+  bio: z.string().min(10).max(280),
+  specialty: z.string().min(2).max(64),
+  location: z.string().min(2).max(64),
+  website: z.string().url().optional().or(z.literal('')),
+  github: z.string().max(39).optional(),
+  twitter: z.string().max(15).optional(),
 });
 
 export class UserController {
@@ -250,6 +262,24 @@ export class UserController {
     try {
       const contributors = await this.service.getContributors();
       res.json(ok(contributors, 'Contributors retrieved'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  becomeCurator = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
+
+      const data = BecomeCuratorSchema.parse(req.body);
+      const user = await this.service.becomeCurator(userId, data);
+      const { passwordHash, ...safeUser } = user;
+
+      res.json(ok(safeUser, 'User promoted to curator'));
     } catch (err) {
       next(err);
     }

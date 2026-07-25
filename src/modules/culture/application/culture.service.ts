@@ -167,8 +167,8 @@ export class CultureService {
 
   // ── Cas d'usage : mettre à jour le statut d'un motif ───────────────────────
   async updatePatternStatus(id: string, status: string, requesterRole: string): Promise<CulturePattern> {
-    if (!['curator', 'admin'].includes(requesterRole)) {
-      throw new ForbiddenError('Seuls les curateurs et admins peuvent modifier le statut');
+    if (!['admin', 'super_admin'].includes(requesterRole)) {
+      throw new ForbiddenError('Seuls les admins et super_admins peuvent modifier le statut');
     }
 
     const pattern = await this.repository.findById(id);

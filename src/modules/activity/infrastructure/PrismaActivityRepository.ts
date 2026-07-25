@@ -46,4 +46,21 @@ export class PrismaActivityRepository {
       totalDownloads: stats._sum?.downloads ?? 0,
     };
   }
+
+  async findGlobal(params?: { skip?: number; take?: number }): Promise<Activity[]> {
+    return this.db.activity.findMany({
+      skip: params?.skip,
+      take: params?.take ?? 20,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
 }

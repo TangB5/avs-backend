@@ -82,6 +82,27 @@ router.get('/', publicApiRateLimiter, controller.list);
 
 /**
  * @swagger
+ * /api/v1/patterns/recent/global:
+ *   get:
+ *     summary: Get recent global patterns
+ *     tags: [Patterns]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 5 }
+ *         description: Number of recent patterns to retrieve
+ *     responses:
+ *       200:
+ *         description: Recent patterns retrieved
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.get('/recent/global', authenticate, controller.getRecentGlobal);
+
+/**
+ * @swagger
  * /api/v1/patterns/{slug}:
  *   get:
  *     summary: Obtenir un motif par son slug

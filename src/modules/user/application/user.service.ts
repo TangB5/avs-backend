@@ -13,6 +13,15 @@ export interface UpdateUserDto {
   avatar?: string;
 }
 
+export interface BecomeCuratorDto {
+  bio: string;
+  specialty: string;
+  location: string;
+  website?: string;
+  github?: string;
+  twitter?: string;
+}
+
 export interface UserPattern {
   id: string;
   name: string;
@@ -427,6 +436,22 @@ export class UserService {
     );
 
     return contributorsWithStats.sort((a, b) => b.score - a.score);
+  }
+
+  async becomeCurator(userId: string, data: BecomeCuratorDto): Promise<User> {
+    const user = await this.repository.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    // Check if user is already a curator or higher
+    if (user.role === 'CURATOR' || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+      throw new Error('User is already a curator or higher');
+    }
+
+    // Update user profile and promote to curator
+    return this.repository.update(userId, {
+      ...data,
+      role: 'CURATOR',
+    });
   }
 }
 
