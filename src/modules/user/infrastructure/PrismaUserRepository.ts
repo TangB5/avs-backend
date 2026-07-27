@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { PrismaClient, User } from '@prisma/client';
+import { ConflictError } from '@/shared/errors/AppError';
 
 export class PrismaUserRepository {
   constructor(private readonly db: PrismaClient) {}
@@ -21,7 +22,15 @@ export class PrismaUserRepository {
   }
 
   async create(data: Prisma.UserCreateInput): Promise<User> {
-    return this.db.user.create({ data });
+    try {
+      return this.db.user.create({ data });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        // Unique constraint violation
+        throw new ConflictError('Cette adresse email est déjà utilisée');
+      }
+      throw error;
+    }
   }
 
   async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {

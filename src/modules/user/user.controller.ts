@@ -58,6 +58,26 @@ const BecomeCuratorSchema = z.object({
   twitter: z.string().max(15).optional(),
 });
 
+const SettingsSchema = z.object({
+  emailComments: z.boolean().optional(),
+  emailDownloads: z.boolean().optional(),
+  emailValidations: z.boolean().optional(),
+  emailNewsletter: z.boolean().optional(),
+  pushBrowser: z.boolean().optional(),
+  pushValidations: z.boolean().optional(),
+  profilePublic: z.boolean().optional(),
+  showEmail: z.boolean().optional(),
+  showLocation: z.boolean().optional(),
+  allowIndexing: z.boolean().optional(),
+  shareAnalytics: z.boolean().optional(),
+  twoFAEnabled: z.boolean().optional(),
+});
+
+const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(8),
+  newPassword: z.string().min(8).regex(/[A-Z]/, 'Une majuscule requise').regex(/[0-9]/, 'Un chiffre requis'),
+});
+
 export class UserController {
   constructor(private readonly service: UserService) {}
   private storage = createStorageService();
@@ -280,6 +300,105 @@ export class UserController {
       const { passwordHash, ...safeUser } = user;
 
       res.json(ok(safeUser, 'User promoted to curator'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getSettings = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
+
+      const settings = await this.service.getSettings(userId);
+      res.json(ok(settings, 'Settings retrieved'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  updateSettings = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
+
+      const data = SettingsSchema.parse(req.body);
+      const user = await this.service.updateSettings(userId, data);
+      const { passwordHash, ...safeUser } = user;
+
+      res.json(ok(safeUser, 'Settings updated'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  changePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
+
+      const data = ChangePasswordSchema.parse(req.body);
+      await this.service.changePassword(userId, data);
+
+      res.json(ok(null, 'Password changed successfully'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getSessions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
+
+      const sessions = await this.service.getSessions(userId);
+      res.json(ok(sessions, 'Sessions retrieved'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  revokeSession = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
+
+      const { sessionId } = req.params;
+      await this.service.revokeSession(userId, sessionId as string);
+
+      res.json(ok(null, 'Session revoked'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  revokeAllSessions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(StatusCodes.UNAUTHORIZED).json({ success: false, message: 'Unauthorized' });
+        return;
+      }
+
+      const { currentSessionId } = req.body;
+      await this.service.revokeAllSessions(userId, currentSessionId);
+
+      res.json(ok(null, 'All sessions revoked'));
     } catch (err) {
       next(err);
     }

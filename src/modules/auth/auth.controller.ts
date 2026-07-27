@@ -20,6 +20,10 @@ const GithubAuthSchema = z.object({
   accessToken: z.string().min(1),
 });
 
+const GoogleAuthSchema = z.object({
+  accessToken: z.string().min(1),
+});
+
 export class AuthController {
   constructor(private readonly service: AuthService) {}
 
@@ -68,6 +72,22 @@ export class AuthController {
       this.setAuthCookies(res, result.tokens);
 
       res.json(ok({ user: result.user }, 'GitHub login successful'));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  // ─────────────────────────────────────────
+  // GOOGLE LOGIN
+  // ─────────────────────────────────────────
+  googleLogin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = GoogleAuthSchema.parse(req.body);
+      const result = await this.service.googleLogin(data);
+
+      this.setAuthCookies(res, result.tokens);
+
+      res.json(ok({ user: result.user }, 'Google login successful'));
     } catch (err) {
       next(err);
     }

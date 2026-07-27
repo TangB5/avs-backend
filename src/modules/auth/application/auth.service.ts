@@ -20,6 +20,10 @@ export interface GithubLoginDto {
   accessToken: string;
 }
 
+export interface GoogleLoginDto {
+  accessToken: string;
+}
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
@@ -45,7 +49,7 @@ export class AuthService {
     const existingUser = await this.userRepository.findByEmail(dto.email);
 
     if (existingUser) {
-      throw new ConflictError('Email already registered');
+      throw new ConflictError('Cette adresse email est déjà utilisée');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
@@ -136,10 +140,56 @@ export class AuthService {
         passwordHash: null,
         role: 'VIEWER',
         github: githubUsername ?? undefined,
-        verified: true,
       });
     } else if (!user.github && githubUsername) {
       user = await this.userRepository.update(user.id, { github: githubUsername });
+    }
+
+    return this.generateAuthResponse(user);
+  }
+
+  // ─────────────────────────────────────────
+  // GOOGLE LOGIN
+  // ─────────────────────────────────────────
+  async googleLogin(dto: GoogleLoginDto): Promise<AuthResponse> {
+    const googleUserResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: {
+        Authorization: `Bearer ${dto.accessToken}`,
+      },
+    });
+
+    if (!googleUserResponse.ok) {
+      throw new UnauthorizedError('Google authentication failed');
+    }
+
+    const googleProfile = (await googleUserResponse.json()) as {
+      email?: string;
+      name?: string;
+      given_name?: string;
+      family_name?: string;
+      sub?: string;
+    };
+
+    const email = googleProfile.email;
+    if (!email) {
+      throw new UnauthorizedError('Google email not provided');
+    }
+
+    const displayName = googleProfile.name?.trim() || googleProfile.given_name || 'Google User';
+    const googleId = googleProfile.sub;
+
+    let user = await this.userRepository.findByEmail(email);
+
+    if (!user) {
+      user = await this.userRepository.create({
+        email,
+        name: displayName,
+        passwordHash: null,
+        role: 'VIEWER',
+        google: googleId ?? undefined,
+      });
+    } else if (!user.google && googleId) {
+      user = await this.userRepository.update(user.id, { google: googleId });
     }
 
     return this.generateAuthResponse(user);

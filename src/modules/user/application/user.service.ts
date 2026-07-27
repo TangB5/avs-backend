@@ -1,6 +1,8 @@
 import type { User } from '@prisma/client';
 import type { IRepository } from '@/shared/types/repository.types';
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+import { UnauthorizedError } from '@/shared/errors/AppError';
 
 export interface UpdateUserDto {
   name?: string;
@@ -11,6 +13,31 @@ export interface UpdateUserDto {
   twitter?: string;
   specialty?: string;
   avatar?: string;
+}
+
+export interface UpdateSettingsDto {
+  // Notification settings
+  emailComments?: boolean;
+  emailDownloads?: boolean;
+  emailValidations?: boolean;
+  emailNewsletter?: boolean;
+  pushBrowser?: boolean;
+  pushValidations?: boolean;
+  
+  // Privacy settings
+  profilePublic?: boolean;
+  showEmail?: boolean;
+  showLocation?: boolean;
+  allowIndexing?: boolean;
+  shareAnalytics?: boolean;
+  
+  // 2FA settings
+  twoFAEnabled?: boolean;
+}
+
+export interface ChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface BecomeCuratorDto {
@@ -452,6 +479,137 @@ export class UserService {
       ...data,
       role: 'CURATOR',
     });
+  }
+
+  async updateSettings(userId: string, data: UpdateSettingsDto): Promise<User> {
+    const user = await this.repository.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    return this.repository.update(userId, data);
+  }
+
+  async changePassword(userId: string, data: ChangePasswordDto): Promise<User> {
+    const user = await this.repository.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    if (!user.passwordHash) {
+      throw new UnauthorizedError('User has no password set (OAuth account)');
+    }
+
+    const isValid = await bcrypt.compare(data.currentPassword, user.passwordHash);
+    if (!isValid) {
+      throw new UnauthorizedError('Current password is incorrect');
+    }
+
+    const newPasswordHash = await bcrypt.hash(data.newPassword, 10);
+    return this.repository.update(userId, { passwordHash: newPasswordHash });
+  }
+
+  async getSettings(userId: string): Promise<{
+    notifications: {
+      emailComments: boolean;
+      emailDownloads: boolean;
+      emailValidations: boolean;
+      emailNewsletter: boolean;
+      pushBrowser: boolean;
+      pushValidations: boolean;
+    };
+    privacy: {
+      profilePublic: boolean;
+      showEmail: boolean;
+      showLocation: boolean;
+      allowIndexing: boolean;
+      shareAnalytics: boolean;
+    };
+    security: {
+      twoFAEnabled: boolean;
+    };
+  }> {
+    const user = await this.repository.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    return {
+      notifications: {
+        emailComments: user.emailComments,
+        emailDownloads: user.emailDownloads,
+        emailValidations: user.emailValidations,
+        emailNewsletter: user.emailNewsletter,
+        pushBrowser: user.pushBrowser,
+        pushValidations: user.pushValidations,
+      },
+      privacy: {
+        profilePublic: user.profilePublic,
+        showEmail: user.showEmail,
+        showLocation: user.showLocation,
+        allowIndexing: user.allowIndexing,
+        shareAnalytics: user.shareAnalytics,
+      },
+      security: {
+        twoFAEnabled: user.twoFAEnabled,
+      },
+    };
+  }
+
+  async getSessions(userId: string): Promise<Array<{
+    id: string;
+    device: string;
+    location: string;
+    lastSeen: string;
+    current: boolean;
+  }>> {
+    const sessions = await this.db.session.findMany({
+      where: { userId },
+      orderBy: { expires: 'desc' },
+    });
+
+    const now = new Date();
+    return sessions.map((session) => ({
+      id: session.id,
+      device: 'Session Web',
+      location: 'Inconnu',
+      lastSeen: this.formatLastSeen(session.expires),
+      current: session.expires > now,
+    }));
+  }
+
+  async revokeSession(userId: string, sessionId: string): Promise<void> {
+    const session = await this.db.session.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) {
+      throw new Error('Session not found');
+    }
+
+    if (session.userId !== userId) {
+      throw new Error('Unauthorized to revoke this session');
+    }
+
+    await this.db.session.delete({
+      where: { id: sessionId },
+    });
+  }
+
+  async revokeAllSessions(userId: string, exceptCurrentSessionId?: string): Promise<void> {
+    const where: any = { userId };
+
+    if (exceptCurrentSessionId) {
+      where.id = { not: exceptCurrentSessionId };
+    }
+
+    await this.db.session.deleteMany({ where });
+  }
+
+  private formatLastSeen(expires: Date): string {
+    const now = new Date();
+    const diffMs = expires.getTime() - now.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 0) return 'Expirée';
+    if (diffDays === 1) return 'Il y a 1 jour';
+    if (diffDays < 7) return `Il y a ${diffDays} jours`;
+    if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} semaines`;
+    return `Il y a ${Math.floor(diffDays / 30)} mois`;
   }
 }
 

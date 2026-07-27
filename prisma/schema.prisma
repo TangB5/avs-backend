@@ -7,6 +7,274 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id               String     @id @default(cuid())
+  email            String     @unique
+  name             String?
+  passwordHash     String?
+  role             Role       @default(VIEWER)
+  emailVerified    DateTime?
+  bio              String?
+  location         String?
+  website          String?
+  github           String?
+  twitter          String?
+  specialty        String?
+  avatar           String?
+  verified         Boolean    @default(false)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  allowIndexing    Boolean    @default(true)
+  emailComments    Boolean    @default(true)
+  emailDownloads   Boolean    @default(false)
+  emailNewsletter  Boolean    @default(false)
+  emailValidations Boolean    @default(true)
+  google           String?
+  profilePublic    Boolean    @default(true)
+  pushBrowser      Boolean    @default(true)
+  pushValidations  Boolean    @default(true)
+  shareAnalytics   Boolean    @default(false)
+  showEmail        Boolean    @default(false)
+  showLocation     Boolean    @default(true)
+  twoFAEnabled     Boolean    @default(false)
+  twoFASecret      String?
+  accounts         Account[]
+  activities       Activity[]
+  artisan          Artisan?
+  comments         Comment[]
+  patterns         Pattern[]
+  sessions         Session[]
+
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Pattern {
+  id           String         @id @default(cuid())
+  slug         String         @unique
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  ceremonial   String
+  cssClass     String
+  downloads    Int            @default(0)
+  era          String?
+  history      String
+  license      String?
+  nameLocal    String
+  sources      String[]
+  summary      String
+  technique    String
+  type         PatternType
+  views        Int            @default(0)
+  imgUrl       String
+  isFeatured   Boolean        @default(false)
+  name         String
+  status       Status         @default(DRAFT)
+  createdById  String
+  artisanQuote ArtisanQuote?
+  comments     Comment[]
+  origin       Origin?
+  colors       PatternColor[]
+  creator      User           @relation(fields: [createdById], references: [id])
+  symbolism    Symbolism?
+  symbols      Symbol[]
+
+  @@index([slug])
+  @@index([type])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([createdById])
+  @@map("patterns")
+}
+
+model Origin {
+  id        String  @id @default(cuid())
+  people    String
+  region    String
+  country   String
+  flag      String
+  coords    Float[]
+  patternId String  @unique
+  pattern   Pattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+
+  @@map("origins")
+}
+
+model PatternColor {
+  id        String  @id @default(cuid())
+  hex       String
+  name      String
+  meaning   String
+  patternId String
+  pattern   Pattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+
+  @@map("pattern_colors")
+}
+
+model Symbol {
+  id         String  @id @default(cuid())
+  name       String
+  nameFr     String
+  cssPreview String
+  imageUrl   String
+  meaning    String
+  usage      String
+  sacred     Boolean @default(false)
+  patternId  String
+  pattern    Pattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+
+  @@map("symbols")
+}
+
+model Symbolism {
+  id        String   @id @default(cuid())
+  meaning   String
+  keywords  String[]
+  usage     String
+  patternId String   @unique
+  pattern   Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
+
+  @@map("symbolism")
+}
+
+model ArtisanQuote {
+  id        String  @id @default(cuid())
+  text      String
+  author    String
+  role      String
+  country   String
+  patternId String  @unique
+  pattern   Pattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+
+  @@map("artisan_quotes")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  access_token      String?
+  refresh_token     String?
+  expires_at        Int?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Artisan {
+  id           String             @id @default(cuid())
+  userId       String             @unique
+  name         String
+  craft        String
+  origin       String
+  country      String
+  bio          String
+  specialties  ArtisanSpecialty[]
+  patternCount Int                @default(0)
+  rating       Float              @default(0)
+  verified     Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments     Comment[]
+
+  @@map("artisans")
+}
+
+model Palette {
+  id          String       @id @default(cuid())
+  name        String
+  origin      String
+  description String
+  patternCSS  String?
+  isPublished Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  tokens      ColorToken[]
+
+  @@map("palettes")
+}
+
+model ColorToken {
+  id        String  @id @default(cuid())
+  name      String
+  hex       String
+  meaning   String
+  origin    String
+  css       String
+  paletteId String
+  palette   Palette @relation(fields: [paletteId], references: [id], onDelete: Cascade)
+
+  @@map("color_tokens")
+}
+
+model Template {
+  id          String             @id @default(cuid())
+  name        String
+  category    TemplateCategory
+  framework   TemplateFramework
+  complexity  TemplateComplexity
+  description String
+  code        String
+  isPublished Boolean            @default(false)
+  isFeatured  Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([category])
+  @@index([framework])
+  @@map("templates")
+}
+
+model Comment {
+  id        String      @id @default(cuid())
+  content   String
+  rating    Float?
+  type      CommentType
+  patternId String?
+  artisanId String?
+  userId    String
+  verified  Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  artisan   Artisan?    @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  pattern   Pattern?    @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([patternId])
+  @@index([artisanId])
+  @@index([userId])
+  @@map("comments")
+}
+
+model Activity {
+  id         String         @id @default(cuid())
+  userId     String
+  action     ActivityAction
+  targetId   String
+  targetType String
+  metadata   Json?
+  createdAt  DateTime       @default(now())
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([targetId])
+  @@map("activities")
+}
+
 enum Role {
   VIEWER
   CONTRIBUTOR
@@ -33,149 +301,6 @@ enum Status {
   REJECTED
 }
 
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  passwordHash  String?
-  role          Role      @default(VIEWER)
-  emailVerified DateTime?
-  bio           String?   @db.Text
-  location      String?
-  website       String?
-  github        String?
-  twitter       String?
-  specialty     String?
-  avatar        String?
-  verified      Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  accounts      Account[]
-  sessions      Session[]
-  artisan       Artisan?
-  patterns      Pattern[]
-  comments      Comment[]
-  activities    Activity[]
-  @@index([createdAt])
-  @@map("users")
-}
-
-model Pattern {
-  id            String        @id @default(cuid())
-  slug          String        @unique
-  name          String
-  nameLocal     String
-  createdById   String
-  creator       User?         @relation(fields: [createdById], references: [id])
-  imgUrl        String
-  type          PatternType
-  cssClass      String
-  era           String?
-  license       String?
-  summary       String        @db.Text
-  history       String        @db.Text
-  technique     String        @db.Text
-  symbolism     Symbolism?     
-  ceremonial    String        @db.Text
-  sources       String[]
-  downloads     Int           @default(0)
-  views         Int           @default(0)
-  status        Status        @default(DRAFT)
-  isFeatured    Boolean       @default(false)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  origin        Origin?
-  colors        PatternColor[]
-  symbols       Symbol[]
-  artisanQuote  ArtisanQuote?
-  comments      Comment[]
-  @@index([slug])
-  @@index([type])
-  @@index([status])
-  @@index([isFeatured])
-  @@index([createdById])
-  @@map("patterns")
-}
-
-model Origin {
-  id        String   @id @default(cuid())
-  people    String
-  region    String
-  country   String
-  flag      String
-  coords    Float[]
-  patternId String   @unique
-  pattern   Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
-  @@map("origins")
-}
-
-model PatternColor {
-  id        String   @id @default(cuid())
-  hex       String
-  name      String
-  meaning   String   @db.Text
-  patternId String
-  pattern   Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
-  @@map("pattern_colors")
-}
-
-model Symbol {
-  id         String   @id @default(cuid())
-  name       String
-  nameFr     String
-  cssPreview String
-  imageUrl   String
-  meaning    String   @db.Text
-  usage      String   @db.Text
-  sacred     Boolean  @default(false)
-  patternId  String
-  pattern    Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
-  @@map("symbols")
-}
-
-model Symbolism{
-  id       String   @id @default(cuid())
-  meaning  String
-  keywords String[]
-  usage    String
-  patternId String   @unique
-  pattern   Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
-  @@map("symbolism")
-
-}
-model ArtisanQuote {
-  id        String   @id @default(cuid())
-  text      String   @db.Text
-  author    String
-  role      String
-  country   String
-  patternId String   @unique
-  pattern   Pattern  @relation(fields: [patternId], references: [id], onDelete: Cascade)
-  @@map("artisan_quotes")
-}
-
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  provider          String
-  providerAccountId String
-  access_token      String? @db.Text
-  refresh_token     String? @db.Text
-  expires_at        Int?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@map("sessions")
-}
-
 enum ArtisanSpecialty {
   KENTE
   BOGOLAN
@@ -184,50 +309,6 @@ enum ArtisanSpecialty {
   KUBA
   NDOP
   WAX
-}
-
-model Artisan {
-  id            String               @id @default(cuid())
-  userId        String               @unique
-  name          String
-  craft         String
-  origin        String
-  country       String
-  bio           String               @db.Text
-  specialties   ArtisanSpecialty[]
-  patternCount  Int                  @default(0)
-  rating        Float                @default(0)
-  verified      Boolean              @default(false)
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comments      Comment[]
-  @@map("artisans")
-}
-
-model Palette {
-  id           String        @id @default(cuid())
-  name         String
-  origin       String
-  description  String        @db.Text
-  patternCSS   String?
-  isPublished  Boolean       @default(false)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  tokens       ColorToken[]
-  @@map("palettes")
-}
-
-model ColorToken {
-  id        String   @id @default(cuid())
-  name      String
-  hex       String
-  meaning   String   @db.Text
-  origin    String
-  css       String
-  paletteId String
-  palette   Palette  @relation(fields: [paletteId], references: [id], onDelete: Cascade)
-  @@map("color_tokens")
 }
 
 enum TemplateCategory {
@@ -254,46 +335,9 @@ enum TemplateComplexity {
   ADVANCED
 }
 
-model Template {
-  id          String               @id @default(cuid())
-  name        String
-  category    TemplateCategory
-  framework   TemplateFramework
-  complexity  TemplateComplexity
-  description String               @db.Text
-  code        String               @db.Text
-  isPublished Boolean              @default(false)
-  isFeatured  Boolean              @default(false)
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-  @@index([category])
-  @@index([framework])
-  @@map("templates")
-}
-
 enum CommentType {
   PATTERN
   ARTISAN
-}
-
-model Comment {
-  id        String      @id @default(cuid())
-  content   String      @db.Text
-  rating    Float?
-  type      CommentType
-  patternId String?
-  artisanId String?
-  pattern   Pattern?    @relation(fields: [patternId], references: [id], onDelete: Cascade)
-  artisan   Artisan?    @relation(fields: [artisanId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  verified  Boolean     @default(false)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  @@index([patternId])
-  @@index([artisanId])
-  @@index([userId])
-  @@map("comments")
 }
 
 enum ActivityAction {
@@ -304,19 +348,4 @@ enum ActivityAction {
   REVIEWED
   DOWNLOADED
   FAVORITED
-}
-
-model Activity {
-  id         String        @id @default(cuid())
-  userId     String
-  action     ActivityAction
-  targetId   String
-  targetType String
-  metadata   Json?
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt  DateTime      @default(now())
-  @@index([userId])
-  @@index([createdAt])
-  @@index([targetId])
-  @@map("activities")
 }

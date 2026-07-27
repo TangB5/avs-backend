@@ -353,4 +353,164 @@ router.get('/contributors', authenticate, controller.getContributors);
  */
 router.post('/become-curator', authenticate, controller.becomeCurator);
 
+/**
+ * @swagger
+ * /api/v1/users/me/settings:
+ *   get:
+ *     summary: Get user settings
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User settings
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.get('/me/settings', authenticate, controller.getSettings);
+
+/**
+ * @swagger
+ * /api/v1/users/me/settings:
+ *   patch:
+ *     summary: Update user settings
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               emailComments:
+ *                 type: boolean
+ *               emailDownloads:
+ *                 type: boolean
+ *               emailValidations:
+ *                 type: boolean
+ *               emailNewsletter:
+ *                 type: boolean
+ *               pushBrowser:
+ *                 type: boolean
+ *               pushValidations:
+ *                 type: boolean
+ *               profilePublic:
+ *                 type: boolean
+ *               showEmail:
+ *                 type: boolean
+ *               showLocation:
+ *                 type: boolean
+ *               allowIndexing:
+ *                 type: boolean
+ *               shareAnalytics:
+ *                 type: boolean
+ *               twoFAEnabled:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Settings updated
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.patch('/me/settings', authenticate, controller.updateSettings);
+
+/**
+ * @swagger
+ * /api/v1/users/me/change-password:
+ *   post:
+ *     summary: Change user password
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 minLength: 8
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       400:
+ *         description: Invalid password
+ */
+router.post('/me/change-password', authenticate, controller.changePassword);
+
+/**
+ * @swagger
+ * /api/v1/users/me/sessions:
+ *   get:
+ *     summary: Get user active sessions
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User sessions
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.get('/me/sessions', authenticate, controller.getSessions);
+
+/**
+ * @swagger
+ * /api/v1/users/me/sessions/{sessionId}:
+ *   delete:
+ *     summary: Revoke a specific session
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Session revoked
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.delete('/me/sessions/:sessionId', authenticate, controller.revokeSession);
+
+/**
+ * @swagger
+ * /api/v1/users/me/sessions/revoke-all:
+ *   post:
+ *     summary: Revoke all sessions except current
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               currentSessionId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: All sessions revoked
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.post('/me/sessions/revoke-all', authenticate, controller.revokeAllSessions);
+
 export default router;
